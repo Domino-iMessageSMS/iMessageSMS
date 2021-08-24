@@ -31,7 +31,7 @@ jobs:
         mvn install:install-file -Dfile="lib/Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
 
     - name: 3. Build with Maven
-      run: mvn package
+      run: mvn -B package --file pom.xml
 
     - name: 4. Publish to GitHub Packages Apache Maven
       run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
