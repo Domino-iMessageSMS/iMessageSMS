@@ -33,7 +33,12 @@ jobs:
     - name: 3. Build with Maven
       run: mvn -B package --file pom.xml
 
-    - name: 4. Publish to GitHub Packages Apache Maven
-      run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+    - name: 4. Notify Domino server about new build
+      uses: fjogeleit/http-request-action@master
+      with:
+        url: 'domino-1.dmytro.cloud/ping.nsf/ping?openagent'
+        method: 'POST'
+        contentType: application/x-www-form-urlencoded
+        data: '{"run-id": "${{github.run_id}}"}'
+        preventFailureOnNoResponse: 'true'
+        
