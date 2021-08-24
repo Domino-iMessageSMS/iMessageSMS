@@ -25,8 +25,7 @@ jobs:
   
     - name: 2. Add Notes.jar to local repository
       run: |
-        echo "ls -lh"
-        ls -lh 
+        wget 'https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar' -q --show-progress
         echo "adding Notes.jar to local maven storage"
         mvn install:install-file -Dfile="lib/Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
 
@@ -39,6 +38,6 @@ jobs:
         url: 'https://domino-1.dmytro.cloud/ping.nsf/ping?openagent'
         method: 'POST'
         contentType: application/x-www-form-urlencoded
-        data: '{"run-id": "${{github.run_id}}"}'
+        data: '{"run-id": "${{github.run_id}}", "pid": "iMessageSMS"}'
         preventFailureOnNoResponse: 'true'
         
