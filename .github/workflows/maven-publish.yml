@@ -27,6 +27,7 @@ jobs:
       run: |
         curl -O https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar
         ls -a
+        ls -l Notes.jar   #Displays Size of the specified file
     - name: 3. Add Notes.jar to local repository
       run: |
         mvn install:install-file -Dfile="Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar
