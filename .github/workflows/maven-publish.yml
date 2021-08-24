@@ -29,8 +29,8 @@ jobs:
         pwd 
         echo "2.2) curl"
         curl -H "Accept: application/zip" https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.tmp > Notes.jar 
-        echo "2.3) ls lh"
-        ls lh 
+        echo "2.3) ls -lh"
+        ls -lh 
 
     - name: 3. Add Notes.jar to local repository
       run: |
