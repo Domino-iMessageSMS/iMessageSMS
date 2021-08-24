@@ -23,14 +23,16 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
   
-    - name: "2. Download Notes.jar"  
-      uses: suisei-cn/actions-download-file@v1
-      id: downloadfile  # Remember to give an ID if you need the output
-    - name: Download the file
-      with:
-        url: "Path to Notes.jar [this](https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar)!"
-        target: /
-        auto-match: true
+    - name: 2. Download Notes.jar
+      run: |
+        echo "2.1) pwd"
+        pwd 
+        echo "2.2) curl"
+        curl -L -O https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.zip
+        echo "2.3) unzip"
+        unzip Notes.zip
+        echo "2.4) ls -lh"
+        ls -lh 
 
     - name: 3. Add Notes.jar to local repository
       run: |
