@@ -14,10 +14,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK 8
+    - name: 1. Set up JDK 8
       uses: actions/setup-java@v2
       with:
         java-version: '8'
         distribution: 'adopt'
-    - name: Build with Maven
+    - name: 2. Download Notes.jar
+      run: |
+        curl -O https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar
+        ls -a
+        mvn install:install-file -Dfile="Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar
+    - name: 4. Build with Maven
       run: mvn -B package --file pom.xml
