@@ -25,7 +25,7 @@ jobs:
 
     - name: 2. Download Notes.jar
       run: |
-        curl -O https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar
+        curl -H "Accept: application/zip" https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar > Notes.jar
         ls -a
         ls -l Notes.jar   #Displays Size of the specified file
     - name: 3. Add Notes.jar to local repository
