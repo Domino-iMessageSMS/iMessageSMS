@@ -23,6 +23,7 @@ jobs:
       run: |
         curl -O https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar
         ls -a
+    - name: 3. Add Notes.jar to local repository
         mvn install:install-file -Dfile="Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar
     - name: 4. Build with Maven
       run: mvn -B package --file pom.xml
