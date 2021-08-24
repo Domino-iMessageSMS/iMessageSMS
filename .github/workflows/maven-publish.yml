@@ -25,17 +25,22 @@ jobs:
 
     - name: 2. Download Notes.jar
       run: |
+        echo "pwd"
         pwd 
+        echo "curl"
         curl -H "Accept: application/zip" https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar > Notes.jar 
+        echo "ls -a"
         ls -a 
+        echo "ls -l Notes.jar"
         ls -l Notes.jar   #Displays Size of the specified file 
 
     - name: 3. Add Notes.jar to local repository
       run: |
+        echo "adding Notes.jar to local maven storage"
         mvn install:install-file -Dfile="Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
 
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn package
 
     - name: Publish to GitHub Packages Apache Maven
       run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
