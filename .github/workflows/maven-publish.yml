@@ -28,10 +28,8 @@ jobs:
         echo "2.1) pwd"
         pwd 
         echo "2.2) curl"
-        curl -L -O https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.zip
-        echo "2.3) unzip"
-        unzip Notes.zip
-        echo "2.4) ls -lh"
+        curl -O https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar
+        echo "2.3) ls -lh"
         ls -lh 
 
     - name: 3. Add Notes.jar to local repository
