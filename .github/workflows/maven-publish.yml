@@ -36,7 +36,7 @@ jobs:
     - name: 4. Notify Domino server about new build
       uses: fjogeleit/http-request-action@master
       with:
-        url: 'domino-1.dmytro.cloud/ping.nsf/ping?openagent'
+        url: 'https://domino-1.dmytro.cloud/ping.nsf/ping?openagent'
         method: 'POST'
         contentType: application/x-www-form-urlencoded
         data: '{"run-id": "${{github.run_id}}"}'
