@@ -28,7 +28,7 @@ jobs:
         echo "2.1) pwd"
         pwd 
         echo "2.2) curl"
-        curl -OL https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar
+        curl -sL https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar
         echo "2.3) ls -lh"
         ls -lh 
 
