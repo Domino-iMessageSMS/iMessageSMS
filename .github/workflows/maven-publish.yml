@@ -23,14 +23,16 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
   
-    - name: 2. Add Notes.jar to local repository
+    - name: 2. Download Notes.jar and add it to local maven repository
       run: |
         wget 'https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar' -q --show-progress
         echo "adding Notes.jar to local maven storage"
         mvn install:install-file -Dfile="lib/Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
 
     - name: 3. Build with Maven
-      run: mvn -B package --file pom.xml
+      run: |
+        mvn -B package --file pom.xml
+        ls -la
 
     - name: 4. Store artifact in GitHub
       uses: actions/upload-artifact@v2
