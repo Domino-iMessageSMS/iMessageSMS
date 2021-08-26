@@ -27,7 +27,7 @@ jobs:
       run: |
         wget 'https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar' -q --show-progress
         echo "adding Notes.jar to local maven storage"
-        mvn install:install-file -Dfile="lib/Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
+        mvn install:install-file -Dfile="Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
 
     - name: 3. Build with Maven
       run: |
