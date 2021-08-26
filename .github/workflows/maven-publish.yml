@@ -49,6 +49,6 @@ jobs:
         url: 'https://domino-1.dmytro.cloud/DeployGitHub.nsf/start?openagent'
         method: 'POST'
         contentType: application/x-www-form-urlencoded
-        data: '{"run-id": "${{github.run_id}}", "repo": "$GITHUB_REPOSITORY", "repo2": "${{github.repository}}"}'
+        data: '{"run-id": "${{github.run_id}}", "repo": "${{github.repository}}"}'
         preventFailureOnNoResponse: 'true'
         
