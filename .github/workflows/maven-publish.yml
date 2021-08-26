@@ -33,12 +33,13 @@ jobs:
       run: |
         mvn -B package --file pom.xml
         ls -la
+        ls -la target
 
     - name: 4. Store artifact in GitHub
       uses: actions/upload-artifact@v2
       with:
         name: iMessageSMS
-        path: iMessageSMS-*.jar
+        path: target/iMessageSMS-*.jar
         retention-days: 1
         if-no-files-found: error
 
