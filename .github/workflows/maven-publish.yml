@@ -32,12 +32,20 @@ jobs:
     - name: 3. Build with Maven
       run: mvn -B package --file pom.xml
 
-    - name: 4. Notify Domino server about new build
+    - name: 4. Store artifact in GitHub
+      uses: actions/upload-artifact@v2
+      with:
+        name: iMessageSMS
+        path: build/iMessageSMS.jar
+        retention-days: 1
+        if-no-files-found: error
+
+    - name: 5. Run deploy on Domino server
       uses: fjogeleit/http-request-action@master
       with:
         url: 'https://domino-1.dmytro.cloud/DeployGitHub.nsf/start?openagent'
         method: 'POST'
         contentType: application/x-www-form-urlencoded
-        data: '{"run-id": "${{github.run_id}}", "pid": "iMessageSMS"}'
+        data: '{"run-id": "${{github.run_id}}", "repo": "$GITHUB_REPOSITORY", "repo2": "${{github.repository}}"}'
         preventFailureOnNoResponse: 'true'
         
