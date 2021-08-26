@@ -36,7 +36,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: iMessageSMS
-        path: build/iMessageSMS.jar
+        path: iMessageSMS.jar
         retention-days: 1
         if-no-files-found: error
 
