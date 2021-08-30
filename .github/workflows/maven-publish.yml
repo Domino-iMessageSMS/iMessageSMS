@@ -26,10 +26,7 @@ jobs:
     - name: 2. Download Notes.jar and add it to local maven repository
       run: |
         echo "publish file for a minute"
-        curl 'https://domino-1.dmytro.cloud/Files.nsf/publish?openagent'
-        wget 'https://domino-1.dmytro.cloud/files.nsf/0/file/$FILE/Notes.jar' -q --show-progress
-        echo "unpublish file after it is downloaded"
-        curl 'https://domino-1.dmytro.cloud/Files.nsf/unpublish?openagent'
+        wget 'https://domino-1.dmytro.cloud/files.nsf/get?openagent&file=Notes.jar' -q --show-progress
         echo "adding Notes.jar to local maven storage"
         mvn install:install-file -Dfile="Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
     - name: 3. Build with Maven
