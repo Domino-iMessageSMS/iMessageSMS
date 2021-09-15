@@ -25,20 +25,20 @@ jobs:
   
     - name: 2. Download Notes.jar and add it to local maven repository
       run: |
-        wget 'https://domino-1.dmytro.cloud/jar.nsf/0/file/$FILE/Notes.jar' -q --show-progress
+        wget 'https://domino-1.dmytro.cloud/files.nsf/get?openagent&file=Notes.jar' -O Notes.jar -q --show-progress
         echo "adding Notes.jar to local maven storage"
-        mvn install:install-file -Dfile="lib/Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
-
+        mvn install:install-file -Dfile="Notes.jar" -DgroupId=lotus.notes -DartifactId=notes -Dversion=10.0 -Dpackaging=jar 
     - name: 3. Build with Maven
       run: |
         mvn -B package --file pom.xml
         ls -la
+        ls -la target
 
     - name: 4. Store artifact in GitHub
       uses: actions/upload-artifact@v2
       with:
         name: iMessageSMS
-        path: iMessageSMS.jar
+        path: target/iMessageSMS-*.jar
         retention-days: 1
         if-no-files-found: error
 
@@ -48,6 +48,6 @@ jobs:
         url: 'https://domino-1.dmytro.cloud/DeployGitHub.nsf/start?openagent'
         method: 'POST'
         contentType: application/x-www-form-urlencoded
-        data: '{"run-id": "${{github.run_id}}", "repo": "$GITHUB_REPOSITORY", "repo2": "${{github.repository}}"}'
+        data: '{"run-id": "${{github.run_id}}", "repo": "${{github.repository}}"}'
         preventFailureOnNoResponse: 'true'
         
