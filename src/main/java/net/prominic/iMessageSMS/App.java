@@ -1,7 +1,6 @@
 package net.prominic.iMessageSMS;
 
 import java.util.Arrays;
-
 import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
