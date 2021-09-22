@@ -1,5 +1,3 @@
-package net.prominic.iMessageSMS;
-
 import java.util.Arrays;
 import lotus.domino.Database;
 import lotus.domino.Document;
@@ -9,12 +7,14 @@ import lotus.domino.Session;
 import lotus.domino.View;
 import lotus.notes.addins.JavaServerAddin;
 import lotus.notes.internal.MessageQueue;
+import net.prominic.iMessageSMS.SendBlueHelper;
+import net.prominic.iMessageSMS.TwilioHelper;
 
-public class App extends JavaServerAddin {
+public class iMessageSMS extends JavaServerAddin {
 	// Constants
 	private final String		JADDIN_NAME				= "iMessageSMS";
-	private final String		JADDIN_VERSION			= "0.3.5 (message configuration)";
-	private final String		JADDIN_DATE				= "2021-03-17 16:30";
+	private final String		JADDIN_VERSION			= "0.3.6 (maven)";
+	private final String		JADDIN_DATE				= "2021-09-23 16:30";
 
 	// MessageQueue Constants
 	public static final int MQ_MAX_MSGSIZE = 1024;
@@ -34,13 +34,14 @@ public class App extends JavaServerAddin {
 	private int 			dominoTaskID			= 0;
 	private int				m_interval				= 3;		// second
 	private int 			m_logState				= 1;		// 0 - debug, 1 - events, 2 - warnings, 3 errors
+	private String			bufState				= "";
 
 	// constructor if parameters are provided
-	public App(String[] args) {
+	public iMessageSMS(String[] args) {
 		this.args = args;
 	}
 
-	public App() {}
+	public iMessageSMS() {}
 
 	/* the runNotes method, which is the main loop of the Addin */
 	@Override
@@ -54,7 +55,12 @@ public class App extends JavaServerAddin {
 
 		try {
 			m_session = NotesFactory.createSession();
-			m_database = m_session.getDatabase("", "iMessageSMS.nsf");
+			m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
+			if (m_database == null || !m_database.isOpen()) {
+				logMessage("iMessageSMS.nsf" + " - not opened.");
+				return;
+			}
+
 			m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
 			m_twilio.setAutoUpdate(false);
 			m_sendblue = m_database.getView("(Sys.UnprocessedSendBlue)");
@@ -100,44 +106,46 @@ public class App extends JavaServerAddin {
 	@SuppressWarnings("deprecation")
 	private void runLoop() {
 		StringBuffer qBuffer = new StringBuffer(1024);
-		String qName = MSG_Q_PREFIX + JADDIN_NAME.toUpperCase();
+		
+		try {
+			String qName = MSG_Q_PREFIX + JADDIN_NAME.toUpperCase();
 
-		mq = new MessageQueue();
-		int messageQueueState = mq.create(qName, 0, 0);	// use like MQCreate in API
-		if (messageQueueState == MessageQueue.ERR_DUPLICATE_MQ) {
-			logMessage(this.JADDIN_NAME + " task is already running");
-			return;
-		}
+			mq = new MessageQueue();
+			int messageQueueState = mq.create(qName, 0, 0);	// use like MQCreate in API
+			if (messageQueueState == MessageQueue.ERR_DUPLICATE_MQ) {
+				logMessage(this.JADDIN_NAME + " task is already running");
+				return;
+			}
 
-		if (messageQueueState != MessageQueue.NOERROR) {
-			logMessage("Unable to create the Domino message queue");
-			return;
-		}
+			if (messageQueueState != MessageQueue.NOERROR) {
+				logMessage("Unable to create the Domino message queue");
+				return;
+			}
 
-		if (mq.open(qName, 0) != MessageQueue.NOERROR) {
-			logMessage("Unable to open Domino message queue");
-			return;
-		}
+			if (mq.open(qName, 0) != MessageQueue.NOERROR) {
+				logMessage("Unable to open Domino message queue");
+				return;
+			}
 
-		while (this.addInRunning() && messageQueueState != MessageQueue.ERR_MQ_QUITTING) {
-			/* gives control to other task in non preemptive os*/
-			OSPreemptOccasionally();
+			while (this.addInRunning() && messageQueueState != MessageQueue.ERR_MQ_QUITTING) {
+				/* gives control to other task in non preemptive os*/
+				OSPreemptOccasionally();
 
-			// check for command from console
-			messageQueueState = mq.get(qBuffer, MQ_MAX_MSGSIZE, MessageQueue.MQ_WAIT_FOR_MSG, 1000);
+				// check for command from console
+				messageQueueState = mq.get(qBuffer, MQ_MAX_MSGSIZE, MessageQueue.MQ_WAIT_FOR_MSG, 1000);
 
-			setAddinState("Idle");
+				setAddinState("Idle");
 
-			if (this.AddInHasSecondsElapsed(m_interval)) {
-				try {
+				if (this.AddInHasSecondsElapsed(m_interval)) {
 					setAddinState("processing...");
 					process();
-				} catch (NotesException e) {
-					this.stopAddin();
-					e.printStackTrace();
 				}
 			}
+		} catch (NotesException e) {
+			this.stopAddin();
+			e.printStackTrace();
 		}
+
 	}
 
 	/*
@@ -168,6 +176,7 @@ public class App extends JavaServerAddin {
 			doc.replaceItemValue("ProcessedTwilio", "1");
 			doc.replaceItemValue("ResponseCodeTwilio", res);
 			doc.save();
+			doc.recycle();
 
 			doc = docNext;
 		}
@@ -193,6 +202,7 @@ public class App extends JavaServerAddin {
 			doc.replaceItemValue("ProcessedSendBlue", "1");
 			doc.replaceItemValue("ResponseCodeSendBlue", res);
 			doc.save();
+			doc.recycle();
 
 			doc = docNext;
 		}
@@ -232,7 +242,10 @@ public class App extends JavaServerAddin {
 		if (this.dominoTaskID == 0)
 			return;
 
-		AddInSetStatusLine(this.dominoTaskID, text);
+		if (!text.equals(this.bufState)) {
+			AddInSetStatusLine(this.dominoTaskID, text);
+			this.bufState = text;
+		}
 	}
 
 	/**
