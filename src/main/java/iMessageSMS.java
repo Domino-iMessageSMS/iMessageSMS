@@ -16,7 +16,7 @@ public class iMessageSMS extends JavaServerAddin {
 	// Constants
 	private final String		JADDIN_NAME			= "iMessageSMS";
 	private final String		JADDIN_VERSION		= "0.3.7 (maven, mq)";
-	private final String		JADDIN_DATE			= "2021-09-23 16:30";
+	private final String		JADDIN_DATE			= "2021-10-04 21:30";
 
 	// MessageQueue Constants
 	private final int 			MQ_MAX_MSGSIZE 		= 1024;
@@ -63,9 +63,9 @@ public class iMessageSMS extends JavaServerAddin {
 				return;
 			}
 
-			showInfo();
-
 			initHelpers();
+
+			showInfo();
 
 			listen();
 		} catch(Exception e) {
@@ -88,13 +88,11 @@ public class iMessageSMS extends JavaServerAddin {
 				String Auth_token = doc.getItemValueString("Auth_token");
 				String Phone = doc.getItemValueString("Phone");
 				m_twilioHelper = new TwilioHelper(Account_SID, Auth_token, Phone);
-				this.logMessage("Twilio is loaded");
 			}
 			else if(form.equalsIgnoreCase("sendblue") && m_sendblueHelper == null) {
 				String api_key = doc.getItemValueString("api_key");
 				String api_secret = doc.getItemValueString("api_secret");
 				m_sendblueHelper = new SendBlueHelper(api_key, api_secret);
-				this.logMessage("SendBlue is loaded");
 			}
 
 			doc = view.getNextDocument(doc);
@@ -171,7 +169,7 @@ public class iMessageSMS extends JavaServerAddin {
 		AddInLogMessageText("   quit       Unload iMessageSMS");
 		AddInLogMessageText("   help       Show help information (or -h)");
 		AddInLogMessageText("   info       Show version and more (or -i)");
-		AddInLogMessageText("Copyright (C) Prominic.NET, Inc. 2020" + (year > 2021 ? " - " + Integer.toString(year) : ""));
+		AddInLogMessageText("Copyright (C) Prominic.NET, Inc. 2020" + (year >= 2021 ? " - " + Integer.toString(year) : ""));
 		AddInLogMessageText("See https://prominic.net for more details.");
 	}
 
@@ -180,6 +178,8 @@ public class iMessageSMS extends JavaServerAddin {
 		logMessage("date         " + this.JADDIN_DATE);
 		logMessage("parameters   " + Arrays.toString(this.args));
 		logMessage("interval     " + m_interval);
+		logMessage("twilio       " + String.valueOf(this.m_twilioHelper != null));		
+		logMessage("sendblue     " + String.valueOf(this.m_sendblueHelper != null));
 		logMessage("counter      " + m_counter);
 	}
 
