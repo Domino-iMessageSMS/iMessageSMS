@@ -1,4 +1,6 @@
 import java.util.Arrays;
+import java.util.Calendar;
+
 import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
@@ -12,15 +14,15 @@ import net.prominic.iMessageSMS.TwilioHelper;
 
 public class iMessageSMS extends JavaServerAddin {
 	// Constants
-	private final String		JADDIN_NAME				= "iMessageSMS";
-	private final String		JADDIN_VERSION			= "0.3.6 (maven)";
-	private final String		JADDIN_DATE				= "2021-09-23 16:30";
+	private final String		JADDIN_NAME			= "iMessageSMS";
+	private final String		JADDIN_VERSION		= "0.3.7 (maven, mq)";
+	private final String		JADDIN_DATE			= "2021-09-23 16:30";
 
 	// MessageQueue Constants
-	public static final int MQ_MAX_MSGSIZE = 1024;
+	private final int 			MQ_MAX_MSGSIZE 		= 1024;
 	// this is already defined (should be = 1):
-	public static final int	MQ_WAIT_FOR_MSG = MessageQueue.MQ_WAIT_FOR_MSG;
-
+	final String 			qName 					= MSG_Q_PREFIX + JADDIN_NAME.toUpperCase();
+	
 	TwilioHelper 			m_twilioHelper			= null;
 	SendBlueHelper 			m_sendblueHelper		= null;
 
@@ -32,8 +34,8 @@ public class iMessageSMS extends JavaServerAddin {
 	View 					m_sendblue				= null;
 	private String[] 		args 					= null;
 	private int 			dominoTaskID			= 0;
-	private int				m_interval				= 3;		// second
-	private int 			m_logState				= 1;		// 0 - debug, 1 - events, 2 - warnings, 3 errors
+	private int				m_interval				= 3;		// seconds
+	private long			m_counter				= 0;
 	private String			bufState				= "";
 
 	// constructor if parameters are provided
@@ -61,26 +63,22 @@ public class iMessageSMS extends JavaServerAddin {
 				return;
 			}
 
-			m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
-			m_twilio.setAutoUpdate(false);
-			m_sendblue = m_database.getView("(Sys.UnprocessedSendBlue)");
-			m_sendblue.setAutoUpdate(false);
+			showInfo();
 
-			logMessage("version      " + this.JADDIN_VERSION);
-			logMessage("date         " + this.JADDIN_DATE);
-			logMessage("parameters   " + Arrays.toString(this.args));
-			logMessage("interval     " + m_interval);
-			logMessage("log level    " + m_logState);
+			initHelpers();
 
-			createHelpers();
-
-			runLoop();
+			listen();
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void createHelpers() throws NotesException {
+	private void initHelpers() throws NotesException {
+		m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
+		m_twilio.setAutoUpdate(false);
+		m_sendblue = m_database.getView("(Sys.UnprocessedSendBlue)");
+		m_sendblue.setAutoUpdate(false);
+
 		View view = m_database.getView("(Sys.Config)");
 		Document doc = view.getFirstDocument();
 		while (doc != null) {
@@ -104,12 +102,10 @@ public class iMessageSMS extends JavaServerAddin {
 	}
 
 	@SuppressWarnings("deprecation")
-	private void runLoop() {
+	private void listen() {
 		StringBuffer qBuffer = new StringBuffer(1024);
 		
 		try {
-			String qName = MSG_Q_PREFIX + JADDIN_NAME.toUpperCase();
-
 			mq = new MessageQueue();
 			int messageQueueState = mq.create(qName, 0, 0);	// use like MQCreate in API
 			if (messageQueueState == MessageQueue.ERR_DUPLICATE_MQ) {
@@ -128,24 +124,63 @@ public class iMessageSMS extends JavaServerAddin {
 			}
 
 			while (this.addInRunning() && messageQueueState != MessageQueue.ERR_MQ_QUITTING) {
+				setAddinState("Idle");
+
 				/* gives control to other task in non preemptive os*/
 				OSPreemptOccasionally();
 
 				// check for command from console
 				messageQueueState = mq.get(qBuffer, MQ_MAX_MSGSIZE, MessageQueue.MQ_WAIT_FOR_MSG, 1000);
+				if (messageQueueState == MessageQueue.ERR_MQ_QUITTING) {
+					return;
+				}
 
-				setAddinState("Idle");
-
+				// check messages
+				String cmd = qBuffer.toString().trim();
+				if (!cmd.isEmpty()) {
+					resolveMessageQueueState(cmd);
+				};
+				
 				if (this.AddInHasSecondsElapsed(m_interval)) {
-					setAddinState("processing...");
+					setAddinState("checking...");
 					process();
 				}
 			}
 		} catch (NotesException e) {
-			this.stopAddin();
 			e.printStackTrace();
 		}
+	}
 
+	private void resolveMessageQueueState(String cmd) {
+		if ("-h".equals(cmd) || "help".equals(cmd)) {
+			showHelp();
+		}
+		else if ("-i".equals(cmd) || "info".equals(cmd)) {
+			showInfo();
+		}
+		else {
+			logMessage("invalid command (use -h or help to get details)");
+		}
+	}
+	
+	private void showHelp() {
+		int year = Calendar.getInstance().get(Calendar.YEAR);
+		logMessage("*** Usage ***");
+		AddInLogMessageText("load runjava iMessageSMS");
+		AddInLogMessageText("tell iMessageSMS <command>");
+		AddInLogMessageText("   quit       Unload iMessageSMS");
+		AddInLogMessageText("   help       Show help information (or -h)");
+		AddInLogMessageText("   info       Show version and more (or -i)");
+		AddInLogMessageText("Copyright (C) Prominic.NET, Inc. 2020" + (year > 2021 ? " - " + Integer.toString(year) : ""));
+		AddInLogMessageText("See https://prominic.net for more details.");
+	}
+
+	private void showInfo() {
+		logMessage("version      " + this.JADDIN_VERSION);
+		logMessage("date         " + this.JADDIN_DATE);
+		logMessage("parameters   " + Arrays.toString(this.args));
+		logMessage("interval     " + m_interval);
+		logMessage("counter      " + m_counter);
 	}
 
 	/*
@@ -163,6 +198,8 @@ public class iMessageSMS extends JavaServerAddin {
 
 		Document doc = m_twilio.getFirstDocument();
 		while (doc != null) {
+			setAddinState("sending...");
+			
 			Document docNext = m_twilio.getNextDocument(doc);
 
 			int res = 0;
@@ -177,7 +214,8 @@ public class iMessageSMS extends JavaServerAddin {
 			doc.replaceItemValue("ResponseCodeTwilio", res);
 			doc.save();
 			doc.recycle();
-
+			m_counter++;
+			
 			doc = docNext;
 		}
 	}
@@ -189,6 +227,8 @@ public class iMessageSMS extends JavaServerAddin {
 
 		Document doc = m_sendblue.getFirstDocument();
 		while (doc != null) {
+			setAddinState("sending...");
+			
 			Document docNext = m_sendblue.getNextDocument(doc);
 
 			int res = 0;
@@ -203,7 +243,8 @@ public class iMessageSMS extends JavaServerAddin {
 			doc.replaceItemValue("ResponseCodeSendBlue", res);
 			doc.save();
 			doc.recycle();
-
+			m_counter++;
+			
 			doc = docNext;
 		}
 	}
