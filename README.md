@@ -31,6 +31,15 @@ JavaAddin\iMessageSMS.jar
 JAVAUSERCLASSES=.\JavaAddin\iMessageSMS.jar
 ```
 
+# iMessageSMS.nsf - where to put it?
+
+Put it under Domino\Data folder.
+We used to read it using following code
+
+```
+m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
+```
+
 # How to run iMessageSMS
 
 ```
