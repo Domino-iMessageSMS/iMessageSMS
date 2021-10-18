@@ -46,6 +46,8 @@ m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
 load runjava iMessageSMS
 ```
 
+![image](https://user-images.githubusercontent.com/844872/137792013-d65406e3-3ebd-42aa-8fec-a162ae78d00e.png)
+
 # Example of commands
 
 ```
@@ -58,4 +60,17 @@ tell iMessageSMS info
 
 ```
 tell iMessageSMS quit
+```
+
+# REST API
+
+Right now we have only 1 method (POST) sendsms
+
+https://yourserver/iMessageSMS.nsf/sendsms
+
+```
+"Content-Type": "application/x-www-form-urlencoded"
+
+"body": "sms text"
+"to": "phone-number"
 ```
