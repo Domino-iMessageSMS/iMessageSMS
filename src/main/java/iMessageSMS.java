@@ -15,8 +15,8 @@ import net.prominic.iMessageSMS.TwilioHelper;
 public class iMessageSMS extends JavaServerAddin {
 	// Constants
 	private final String		JADDIN_NAME			= "iMessageSMS";
-	private final String		JADDIN_VERSION		= "0.3.7 (maven, mq)";
-	private final String		JADDIN_DATE			= "2021-10-04 21:30";
+	private final String		JADDIN_VERSION		= "0.3.8 (send via console)";
+	private final String		JADDIN_DATE			= "2022-03-23 15:30";
 
 	// MessageQueue Constants
 	private final int 			MQ_MAX_MSGSIZE 		= 1024;
@@ -156,11 +156,37 @@ public class iMessageSMS extends JavaServerAddin {
 		else if ("-i".equals(cmd) || "info".equals(cmd)) {
 			showInfo();
 		}
+		else if (cmd.startsWith("sms ")) {
+			sms(cmd);
+		}
 		else {
 			logMessage("invalid command (use -h or help to get details)");
 		}
 	}
 	
+	private void sms(String cmd) {
+		if (cmd.length() < 10) {
+			this.logMessage("command should be longer than 10 characters");
+			return;
+		}
+
+		int index1 = cmd.indexOf(" ", 4);
+		String to = cmd.substring(4, index1);
+		String body = cmd.substring(index1 + 1);
+
+		try {
+			Document doc = m_database.createDocument();
+			doc.replaceItemValue("Form", "Request");
+			doc.replaceItemValue("To", to);
+			doc.replaceItemValue("Body", body);
+			doc.save();	
+			
+			this.logMessage("request has been created");
+		} catch (NotesException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private void showHelp() {
 		int year = Calendar.getInstance().get(Calendar.YEAR);
 		logMessage("*** Usage ***");
