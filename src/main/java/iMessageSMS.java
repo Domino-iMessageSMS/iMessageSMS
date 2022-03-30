@@ -46,7 +46,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			m_sendblue = m_database.getView("(Sys.UnprocessedSendBlue)");
 			m_sendblue.setAutoUpdate(false);
 
-			View view = m_ab.getView("(Sys.Config)");
+			View view = m_database.getView("(Sys.Config)");
 			Document doc = view.getFirstDocument();
 			while (doc != null) {
 				Document docNext = view.getNextDocument(doc);
@@ -149,7 +149,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 		String body = cmd.substring(index1 + 1);
 
 		try {
-			Document doc = m_ab.createDocument();
+			Document doc = m_database.createDocument();
 			doc.replaceItemValue("Form", "Request");
 			doc.replaceItemValue("To", to);
 			doc.replaceItemValue("Body", body);
