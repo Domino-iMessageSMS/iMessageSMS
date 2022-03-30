@@ -25,7 +25,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2022-03-30 15:30";
+		return "2022-03-30 15:35";
 	}
 
 	@Override
@@ -41,9 +41,9 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				return;
 			}
 			
-			m_twilio = m_ab.getView("(Sys.UnprocessedTwilio)");
+			m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
 			m_twilio.setAutoUpdate(false);
-			m_sendblue = m_ab.getView("(Sys.UnprocessedSendBlue)");
+			m_sendblue = m_database.getView("(Sys.UnprocessedSendBlue)");
 			m_sendblue.setAutoUpdate(false);
 
 			View view = m_ab.getView("(Sys.Config)");
