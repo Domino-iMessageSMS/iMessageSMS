@@ -1,3 +1,4 @@
+import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
@@ -7,6 +8,7 @@ import net.prominic.iMessageSMS.SendBlueHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
 
 public class iMessageSMS extends JavaServerAddinGenesis {
+	Database				m_database				= null;		// iMessageSMS.nsf
 	TwilioHelper 			m_twilioHelper			= null;
 	SendBlueHelper 			m_sendblueHelper		= null;
 
@@ -18,7 +20,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinVersion() {
-		return "0.4.0 (sms, gja)";
+		return "0.4.1 (sms, gja)";
 	}
 
 	@Override
@@ -33,6 +35,12 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	private void initHelpers() {
 		try {
+			m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
+			if (m_database == null || !m_database.isOpen()) {
+				logMessage("iMessageSMS.nsf" + " - not opened.");
+				return;
+			}
+			
 			m_twilio = m_ab.getView("(Sys.UnprocessedTwilio)");
 			m_twilio.setAutoUpdate(false);
 			m_sendblue = m_ab.getView("(Sys.UnprocessedSendBlue)");
@@ -41,6 +49,8 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			View view = m_ab.getView("(Sys.Config)");
 			Document doc = view.getFirstDocument();
 			while (doc != null) {
+				Document docNext = view.getNextDocument(doc);
+				
 				String form = doc.getItemValueString("Form");
 				if (form.equalsIgnoreCase("twilio") && m_twilioHelper == null) {
 					String Account_SID = doc.getItemValueString("Account_SID");
@@ -54,8 +64,11 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 					m_sendblueHelper = new SendBlueHelper(api_key, api_secret);
 				}
 
-				doc = view.getNextDocument(doc);
+				doc.recycle();
+				doc = docNext;
 			}
+			
+			view.recycle();
 		} catch (NotesException e) {
 			e.printStackTrace();
 		}
@@ -141,6 +154,8 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			doc.replaceItemValue("To", to);
 			doc.replaceItemValue("Body", body);
 			doc.save();	
+			
+			doc.recycle();
 
 			this.logMessage("request has been created");
 		} catch (NotesException e) {
@@ -235,6 +250,11 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			if (m_sendblue != null) {
 				m_sendblue.recycle();
 				m_sendblue = null;
+			}
+			
+			if (this.m_database != null) {
+				this.m_database.recycle();
+				this.m_database = null;
 			}
 		} catch (NotesException e) {
 			e.printStackTrace();
