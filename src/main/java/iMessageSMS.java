@@ -3,7 +3,7 @@ import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
 import lotus.notes.internal.MessageQueue;
-import net.prominic.gja_v20220330.JavaServerAddinGenesis;
+import net.prominic.gja_v20220405.JavaServerAddinGenesis;
 import net.prominic.iMessageSMS.SendBlueHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
 
@@ -20,12 +20,12 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinVersion() {
-		return "0.4.1 (sms, gja)";
+		return "0.4.2";
 	}
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2022-03-30 15:35";
+		return "2022-04-05 15:35";
 	}
 
 	@Override
