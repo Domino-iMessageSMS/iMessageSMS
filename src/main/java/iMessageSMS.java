@@ -1,31 +1,31 @@
+import java.util.HashMap;
+
 import lotus.domino.Database;
 import lotus.domino.Document;
-import lotus.domino.View;
 import lotus.domino.NotesException;
-import lotus.notes.internal.MessageQueue;
-import net.prominic.gja_v20220413.JavaServerAddinGenesis;
+import lotus.domino.View;
+import net.prominic.gja_v20220427.Event;
+import net.prominic.gja_v20220427.JavaServerAddinGenesis;
+import net.prominic.iMessageSMS.EventSendSMS;
 import net.prominic.iMessageSMS.SendBlueHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
 
 public class iMessageSMS extends JavaServerAddinGenesis {
 	Database				m_database				= null;		// iMessageSMS.nsf
-	TwilioHelper 			m_twilioHelper			= null;
-	SendBlueHelper 			m_sendblueHelper		= null;
-
-	// Instance variables
+	TwilioHelper 			m_twilioHelper 			= null;
+	SendBlueHelper 			m_sendblueHelper 		= null;
 	View 					m_twilio				= null;
 	View 					m_sendblue				= null;
 	private int				m_interval				= 3;		// seconds
-	private long			m_counter				= 0;
 
 	@Override
 	protected String getJavaAddinVersion() {
-		return "0.4.3";
+		return "0.4.4";
 	}
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2022-04-13 15:05";
+		return "2022-05-02 12:35";
 	}
 
 	@Override
@@ -40,7 +40,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				logMessage("iMessageSMS.nsf" + " - not opened.");
 				return;
 			}
-			
+
 			m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
 			m_twilio.setAutoUpdate(false);
 			m_sendblue = m_database.getView("(Sys.UnprocessedSendBlue)");
@@ -68,57 +68,16 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				doc = docNext;
 			}
 			
+			// init Event
+			HashMap<String, Object> params = new HashMap<String, Object>();
+			params.put("twilioHelper", m_twilioHelper);
+			params.put("sendblueHelper", m_sendblueHelper);
+			params.put("twilio", m_twilio);
+			params.put("sendblue", m_sendblue);
+			Event event = new EventSendSMS("SendSMS", m_interval, false, params, this.m_logger);
+			eventsAdd(event);
+			
 			view.recycle();
-		} catch (NotesException e) {
-			e.printStackTrace();
-		}
-	}
-
-	@SuppressWarnings("deprecation")
-	protected void listen() {
-		StringBuffer qBuffer = new StringBuffer(1024);
-
-		try {
-			mq = new MessageQueue();
-			int messageQueueState = mq.create(this.getQName(), 0, 0);	// use like MQCreate in API
-			if (messageQueueState == MessageQueue.ERR_DUPLICATE_MQ) {
-				logMessage(this.getJavaAddinName() + " task is already running");
-				return;
-			}
-
-			if (messageQueueState != MessageQueue.NOERROR) {
-				logMessage("Unable to create the Domino message queue");
-				return;
-			}
-
-			if (mq.open(this.getQName(), 0) != MessageQueue.NOERROR) {
-				logMessage("Unable to open Domino message queue");
-				return;
-			}
-
-			while (this.addInRunning() && messageQueueState != MessageQueue.ERR_MQ_QUITTING) {
-				setAddinState("Idle");
-
-				/* gives control to other task in non preemptive os*/
-				OSPreemptOccasionally();
-
-				// check for command from console
-				messageQueueState = mq.get(qBuffer, MQ_MAX_MSGSIZE, MessageQueue.MQ_WAIT_FOR_MSG, 1000);
-				if (messageQueueState == MessageQueue.ERR_MQ_QUITTING) {
-					return;
-				}
-
-				// check messages
-				String cmd = qBuffer.toString().trim();
-				if (!cmd.isEmpty()) {
-					resolveMessageQueueState(cmd);
-				};
-
-				if (this.AddInHasSecondsElapsed(m_interval)) {
-					setAddinState("checking...");
-					process();
-				}
-			}
 		} catch (NotesException e) {
 			e.printStackTrace();
 		}
@@ -171,73 +130,6 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 		logMessage("interval     " + m_interval);
 		logMessage("twilio       " + String.valueOf(this.m_twilioHelper != null));		
 		logMessage("sendblue     " + String.valueOf(this.m_sendblueHelper != null));
-		logMessage("counter      " + m_counter);
-	}
-
-	/*
-	 * business logic
-	 */
-	private void process() throws NotesException {
-		processSendBlue();
-		processTwilio();
-	}
-
-	private void processTwilio() throws NotesException {
-		if (m_twilioHelper == null) return;
-
-		m_twilio.refresh();
-
-		Document doc = m_twilio.getFirstDocument();
-		while (doc != null) {
-			setAddinState("sending...");
-
-			Document docNext = m_twilio.getNextDocument(doc);
-
-			int res = 0;
-			String to = doc.getItemValueString("To");
-			String body = doc.getItemValueString("Body");
-			if (!(to.isEmpty() || body.isEmpty())) {
-				res = m_twilioHelper.send(to, body);
-			}
-
-			// mark as processed
-			doc.replaceItemValue("ProcessedTwilio", "1");
-			doc.replaceItemValue("ResponseCodeTwilio", res);
-			doc.save();
-			doc.recycle();
-			m_counter++;
-
-			doc = docNext;
-		}
-	}
-
-	private void processSendBlue() throws NotesException {
-		if (m_sendblueHelper == null) return;
-
-		m_sendblue.refresh();
-
-		Document doc = m_sendblue.getFirstDocument();
-		while (doc != null) {
-			setAddinState("sending...");
-
-			Document docNext = m_sendblue.getNextDocument(doc);
-
-			int res = 0;
-			String to = doc.getItemValueString("To");
-			String body = doc.getItemValueString("Body");
-			if (!(to.isEmpty() || body.isEmpty())) {
-				res = m_sendblueHelper.send(to, body);
-			}
-
-			// mark as processed
-			doc.replaceItemValue("ProcessedSendBlue", "1");
-			doc.replaceItemValue("ResponseCodeSendBlue", res);
-			doc.save();
-			doc.recycle();
-			m_counter++;
-
-			doc = docNext;
-		}
 	}
 
 	protected void termBeforeAB() {

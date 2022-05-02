@@ -1,10 +1,11 @@
 package net.prominic.iMessageSMS;
 
 import java.io.UnsupportedEncodingException;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+//import java.nio.charset.StandardCharsets;
 
 public class SendBlueHelper {
 	private final String BASE_API = "https://api.sendblue.co/api/send-message";
@@ -32,7 +33,7 @@ public class SendBlueHelper {
 			conn.setDoOutput(true);
 
 			String data = "number=" + encode(number) + "&content=" + encode("[sendblue javaaddin] " + content);
-			byte[] out = data.getBytes(StandardCharsets.UTF_8);
+			byte[] out = data.getBytes("UTF-8");
 			int length = out.length;
 
 			conn.setFixedLengthStreamingMode(length);

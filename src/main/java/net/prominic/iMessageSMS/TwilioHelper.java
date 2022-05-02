@@ -1,12 +1,12 @@
 package net.prominic.iMessageSMS;
 
 import java.io.BufferedReader;
+
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class TwilioHelper {
@@ -37,7 +37,7 @@ public class TwilioHelper {
 			conn.setDoOutput(true);
 
 			String data = "To=" + encode(phoneTo) + "&From=" + encode(twilio_phone) + "&Body=" + encode(body);
-			byte[] out = data.getBytes(StandardCharsets.UTF_8);
+			byte[] out = data.getBytes("UTF-8");
 			int length = out.length;
 			String userCredentials = this.account_sid + ":" + this.auth_token;
 			String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userCredentials.getBytes()));
