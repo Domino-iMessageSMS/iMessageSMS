@@ -4,8 +4,8 @@ import java.util.HashMap;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v20220502.Event;
-import net.prominic.gja_v20220502.GLogger;
+import net.prominic.gja_v20220511.Event;
+import net.prominic.gja_v20220511.GLogger;
 
 public class EventSendSMS extends Event {
 	TwilioHelper 			m_twilioHelper			= null;

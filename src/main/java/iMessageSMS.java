@@ -1,11 +1,10 @@
 import java.util.HashMap;
-
 import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v20220502.Event;
-import net.prominic.gja_v20220502.JavaServerAddinGenesis;
+import net.prominic.gja_v20220511.Event;
+import net.prominic.gja_v20220511.JavaServerAddinGenesis;
 import net.prominic.iMessageSMS.EventSendSMS;
 import net.prominic.iMessageSMS.SendBlueHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
@@ -25,7 +24,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2022-05-02 12:35";
+		return "2022-05-11 15:00";
 	}
 
 	@Override
