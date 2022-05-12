@@ -1,10 +1,8 @@
-import java.util.HashMap;
 import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v20220511.Event;
-import net.prominic.gja_v20220511.JavaServerAddinGenesis;
+import net.prominic.gja_v20220512.JavaServerAddinGenesis;
 import net.prominic.iMessageSMS.EventSendSMS;
 import net.prominic.iMessageSMS.SendBlueHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
@@ -24,7 +22,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2022-05-11 15:00";
+		return "2022-05-12 15:00";
 	}
 
 	@Override
@@ -67,13 +65,12 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				doc = docNext;
 			}
 			
-			// init Event
-			HashMap<String, Object> params = new HashMap<String, Object>();
-			params.put("twilioHelper", m_twilioHelper);
-			params.put("sendblueHelper", m_sendblueHelper);
-			params.put("twilio", m_twilio);
-			params.put("sendblue", m_sendblue);
-			Event event = new EventSendSMS("SendSMS", m_interval, false, params, this.m_logger);
+			// init EventSMS
+			EventSendSMS event = new EventSendSMS("SendSMS", m_interval, false, this.m_logger);
+			event.twilioHelper = m_twilioHelper;
+			event.twilio = m_twilio;
+			event.sendblueHelper = m_sendblueHelper;
+			event.sendblue = m_sendblue;
 			eventsAdd(event);
 			
 			view.recycle();

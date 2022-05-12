@@ -1,25 +1,19 @@
 package net.prominic.iMessageSMS;
 
-import java.util.HashMap;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v20220511.Event;
-import net.prominic.gja_v20220511.GLogger;
+import net.prominic.gja_v20220512.Event;
+import net.prominic.gja_v20220512.GLogger;
 
 public class EventSendSMS extends Event {
-	TwilioHelper 			m_twilioHelper			= null;
-	SendBlueHelper 			m_sendblueHelper		= null;
-	View 					m_twilio				= null;
-	View 					m_sendblue				= null;
+	public TwilioHelper 			twilioHelper		= null;
+	public SendBlueHelper 			sendblueHelper		= null;
+	public View 					twilio				= null;
+	public View 					sendblue			= null;
 
-	public EventSendSMS(String name, long seconds, boolean fireOnStart, HashMap<String, Object> params, GLogger logger) {
-		super(name, seconds, fireOnStart, params, logger);
-		
-		m_twilioHelper = (TwilioHelper) params.get("twilioHelper");
-		m_sendblueHelper = (SendBlueHelper) params.get("sendblueHelper");
-		m_twilio = (View) params.get("twilio");
-		m_sendblue = (View) params.get("sendblue");
+	public EventSendSMS(String name, long seconds, boolean fireOnStart, GLogger logger) {
+		super(name, seconds, fireOnStart, logger);
 	}
 
 	@Override
@@ -33,19 +27,19 @@ public class EventSendSMS extends Event {
 	}
 
 	private void processTwilio() throws NotesException {
-		if (m_twilioHelper == null) return;
+		if (twilioHelper == null) return;
 
-		m_twilio.refresh();
+		twilio.refresh();
 
-		Document doc = m_twilio.getFirstDocument();
+		Document doc = twilio.getFirstDocument();
 		while (doc != null) {
-			Document docNext = m_twilio.getNextDocument(doc);
+			Document docNext = twilio.getNextDocument(doc);
 
 			int res = 0;
 			String to = doc.getItemValueString("To");
 			String body = doc.getItemValueString("Body");
 			if (!(to.isEmpty() || body.isEmpty())) {
-				res = m_twilioHelper.send(to, body);
+				res = twilioHelper.send(to, body);
 			}
 
 			// mark as processed
@@ -59,19 +53,19 @@ public class EventSendSMS extends Event {
 	}
 
 	private void processSendBlue() throws NotesException {
-		if (m_sendblueHelper == null) return;
+		if (sendblueHelper == null) return;
 
-		m_sendblue.refresh();
+		sendblue.refresh();
 
-		Document doc = m_sendblue.getFirstDocument();
+		Document doc = sendblue.getFirstDocument();
 		while (doc != null) {
-			Document docNext = m_sendblue.getNextDocument(doc);
+			Document docNext = sendblue.getNextDocument(doc);
 
 			int res = 0;
 			String to = doc.getItemValueString("To");
 			String body = doc.getItemValueString("Body");
 			if (!(to.isEmpty() || body.isEmpty())) {
-				res = m_sendblueHelper.send(to, body);
+				res = sendblueHelper.send(to, body);
 			}
 
 			// mark as processed
