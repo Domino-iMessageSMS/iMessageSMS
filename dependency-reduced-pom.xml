@@ -4,7 +4,7 @@
   <groupId>net.prominic.iMessageSMS</groupId>
   <artifactId>iMessageSMS</artifactId>
   <name>iMessageSMS</name>
-  <version>0-4-4</version>
+  <version>0.5.0</version>
   <url>http://maven.apache.org</url>
   <build>
     <plugins>
