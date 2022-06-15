@@ -3,8 +3,8 @@ package net.prominic.iMessageSMS;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v080.Event;
-import net.prominic.gja_v080.GLogger;
+import net.prominic.gja_v082.Event;
+import net.prominic.gja_v082.GLogger;
 
 public class EventSendSMS extends Event {
 	public TwilioHelper 			twilioHelper		= null;

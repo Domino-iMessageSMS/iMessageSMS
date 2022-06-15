@@ -2,7 +2,7 @@ import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v080.JavaServerAddinGenesis;
+import net.prominic.gja_v082.JavaServerAddinGenesis;
 import net.prominic.iMessageSMS.EventSendSMS;
 import net.prominic.iMessageSMS.SendBlueHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
@@ -22,7 +22,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2022-06-08 15:00";
+		return "2022-06-15 15:00";
 	}
 
 	@Override
