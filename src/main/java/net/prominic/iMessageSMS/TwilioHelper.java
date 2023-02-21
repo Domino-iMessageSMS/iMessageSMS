@@ -13,12 +13,12 @@ public class TwilioHelper {
 
 	private String account_sid = null;
 	private String auth_token = null;
-	private String twilio_phone = null;
+	private String phone = null;
 
 	public TwilioHelper(String account_sid, String auth_token, String twilio_phone) {
-		this.account_sid = account_sid;
-		this.auth_token = auth_token;
-		this.twilio_phone = twilio_phone;
+		this.setAccount_sid(account_sid);
+		this.setAuth_token(auth_token);
+		this.setPhone(twilio_phone);
 	}
 
 	private String encode(String value) throws UnsupportedEncodingException {
@@ -30,15 +30,15 @@ public class TwilioHelper {
 
 		int res = 0;
 		try {
-			URL u = new URL(BASE_API + "/Accounts/"+ account_sid + "/Messages.json");
+			URL u = new URL(BASE_API + "/Accounts/"+ getAccount_sid() + "/Messages.json");
 			HttpURLConnection conn = (HttpURLConnection) u.openConnection();
 			conn.setRequestMethod("POST");
 			conn.setDoOutput(true);
 
-			String data = "To=" + encode(phoneTo) + "&From=" + encode(twilio_phone) + "&Body=" + encode(body);
+			String data = "To=" + encode(phoneTo) + "&From=" + encode(getPhone()) + "&Body=" + encode(body);
 			byte[] out = data.getBytes("UTF-8");
 			int length = out.length;
-			String userCredentials = this.account_sid + ":" + this.auth_token;
+			String userCredentials = this.getAccount_sid() + ":" + this.getAuth_token();
 			String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userCredentials.getBytes()));
 
 			conn.setFixedLengthStreamingMode(length);
@@ -71,5 +71,29 @@ public class TwilioHelper {
 
 		System.out.println("twilio.send: completed");
 		return res;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
+	public String getAuth_token() {
+		return auth_token;
+	}
+
+	public void setAuth_token(String auth_token) {
+		this.auth_token = auth_token;
+	}
+
+	public String getAccount_sid() {
+		return account_sid;
+	}
+
+	public void setAccount_sid(String account_sid) {
+		this.account_sid = account_sid;
 	}
 }

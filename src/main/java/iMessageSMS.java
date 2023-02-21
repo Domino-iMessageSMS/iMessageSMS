@@ -4,25 +4,22 @@ import lotus.domino.NotesException;
 import lotus.domino.View;
 import net.prominic.gja_v082.JavaServerAddinGenesis;
 import net.prominic.iMessageSMS.EventSendSMS;
-import net.prominic.iMessageSMS.SendBlueHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
 
 public class iMessageSMS extends JavaServerAddinGenesis {
-	Database				m_database				= null;		// iMessageSMS.nsf
-	TwilioHelper 			m_twilioHelper 			= null;
-	SendBlueHelper 			m_sendblueHelper 		= null;
-	View 					m_twilio				= null;
-	View 					m_sendblue				= null;
-	private int				m_interval				= 3;		// seconds
+	Database m_database = null; // iMessageSMS.nsf
+	TwilioHelper m_twilioHelper = null;
+	View m_twilio = null;
+	private int m_interval = 3; // seconds
 
 	@Override
 	protected String getJavaAddinVersion() {
-		return "0.5.0";
+		return "0.6.0";
 	}
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2022-06-20 19:00";
+		return "2023-02-21 19:00";
 	}
 
 	@Override
@@ -32,48 +29,25 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	private void initHelpers() {
 		try {
+			// 1. database
 			m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
 			if (m_database == null || !m_database.isOpen()) {
-				logMessage("iMessageSMS.nsf" + " - not opened.");
+				logMessage("(!) iMessageSMS.nsf - can't be opened");
 				return;
 			}
 
+			// 2. create twilio rest helper
+			initTwilioHelper();
+			if (m_twilioHelper==null) return;
+
 			m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
 			m_twilio.setAutoUpdate(false);
-			m_sendblue = m_database.getView("(Sys.UnprocessedSendBlue)");
-			m_sendblue.setAutoUpdate(false);
 
-			View view = m_database.getView("(Sys.Config)");
-			Document doc = view.getFirstDocument();
-			while (doc != null) {
-				Document docNext = view.getNextDocument(doc);
-				
-				String form = doc.getItemValueString("Form");
-				if (form.equalsIgnoreCase("twilio") && m_twilioHelper == null) {
-					String Account_SID = doc.getItemValueString("Account_SID");
-					String Auth_token = doc.getItemValueString("Auth_token");
-					String Phone = doc.getItemValueString("Phone");
-					m_twilioHelper = new TwilioHelper(Account_SID, Auth_token, Phone);
-				}
-				else if(form.equalsIgnoreCase("sendblue") && m_sendblueHelper == null) {
-					String api_key = doc.getItemValueString("api_key");
-					String api_secret = doc.getItemValueString("api_secret");
-					m_sendblueHelper = new SendBlueHelper(api_key, api_secret);
-				}
-
-				doc.recycle();
-				doc = docNext;
-			}
-			
-			// init EventSMS
+			// 4. create send sms job
 			EventSendSMS event = new EventSendSMS("SendSMS", m_interval, false, this.m_logger);
 			event.twilioHelper = m_twilioHelper;
 			event.twilio = m_twilio;
-			event.sendblueHelper = m_sendblueHelper;
-			event.sendblue = m_sendblue;
 			eventsAdd(event);
-			
-			view.recycle();
 		} catch (NotesException e) {
 			e.printStackTrace();
 		}
@@ -81,16 +55,55 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	protected boolean resolveMessageQueueState(String cmd) {
 		boolean flag = super.resolveMessageQueueState(cmd);
-		if (flag) return true;
+		if (flag)
+			return true;
 
 		if (cmd.startsWith("sms ")) {
 			sms(cmd);
-		}
-		else {
+		} else if ("cmd".startsWith("config")) {
+			config();
+		} else {
 			logMessage("invalid command (use -h or help to get details)");
 		}
 
 		return true;
+	}
+
+	private void initTwilioHelper() {
+		try {
+			View view = m_database.getView("(Sys.Config)");
+			Document doc = view.getFirstDocument();
+			if (doc == null) {
+				logMessage("(!) Config is missing in iMessageSMS.nsf");
+				return;
+			}
+
+			String Account_SID = doc.getItemValueString("Account_SID");
+			String Auth_token = doc.getItemValueString("Auth_token");
+			String Phone = doc.getItemValueString("Phone");
+
+			doc.recycle();
+			view.recycle();
+
+			if (Account_SID.isEmpty() || Auth_token.isEmpty()) {
+				logMessage("(!) Config missing SID/token");
+				return;
+			}
+
+			if (m_twilioHelper == null) {
+				m_twilioHelper = new TwilioHelper(Account_SID, Auth_token, Phone);
+			} else {
+				m_twilioHelper.setAccount_sid(Account_SID);
+				m_twilioHelper.setAuth_token(Auth_token);
+				m_twilioHelper.setPhone(Phone);
+			}
+		} catch (NotesException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void config() {
+		initTwilioHelper();
 	}
 
 	private void sms(String cmd) {
@@ -108,24 +121,24 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			doc.replaceItemValue("Form", "Request");
 			doc.replaceItemValue("To", to);
 			doc.replaceItemValue("Body", body);
-			doc.save();	
-			
+			doc.save();
+
 			doc.recycle();
 
-			this.logMessage("request has been created");
+			logMessage("request has been created");
 		} catch (NotesException e) {
 			e.printStackTrace();
 		}
 	}
 
 	protected void showHelpExt() {
-		AddInLogMessageText("   sms <to> <body>  Send sms");		
+		logMessage("   config           Refresh SID, token and phone from active config");
+		logMessage("   sms <to> <body>  Send sms");
 	}
 
 	protected void showInfoExt() {
 		logMessage("interval     " + m_interval);
-		logMessage("twilio       " + String.valueOf(this.m_twilioHelper != null));		
-		logMessage("sendblue     " + String.valueOf(this.m_sendblueHelper != null));
+		logMessage("twilio phone " + m_twilioHelper.getPhone());
 	}
 
 	protected void termBeforeAB() {
@@ -135,11 +148,6 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				m_twilio = null;
 			}
 
-			if (m_sendblue != null) {
-				m_sendblue.recycle();
-				m_sendblue = null;
-			}
-			
 			if (this.m_database != null) {
 				this.m_database.recycle();
 				this.m_database = null;
