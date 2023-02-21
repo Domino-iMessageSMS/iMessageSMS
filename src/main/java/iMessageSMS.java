@@ -112,9 +112,9 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 	private void config() {
 		boolean res = initTwilioHelper();
 		if (res)
-			logMessage("ok");
+			logMessage("config updated: OK");
 		else
-			logMessage("(!) Failed");
+			logMessage("config updated: failed");
 	}
 
 	private void sms(String cmd) {
