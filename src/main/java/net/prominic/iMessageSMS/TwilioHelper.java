@@ -11,9 +11,9 @@ import java.util.Base64;
 public class TwilioHelper {
 	private final String BASE_API = "https://api.twilio.com/2010-04-01";
 
-	private String account_sid = null;
-	private String auth_token = null;
-	private String phone = null;
+	private String m_account_sid = null;
+	private String m_auth_token = null;
+	private String m_phone = null;
 
 	public TwilioHelper(String account_sid, String auth_token, String twilio_phone) {
 		this.setAccount_sid(account_sid);
@@ -74,26 +74,26 @@ public class TwilioHelper {
 	}
 
 	public String getPhone() {
-		return phone;
+		return m_phone;
 	}
 
 	public void setPhone(String phone) {
-		this.phone = phone;
+		this.m_phone = phone;
 	}
 
 	public String getAuth_token() {
-		return auth_token;
+		return m_auth_token;
 	}
 
 	public void setAuth_token(String auth_token) {
-		this.auth_token = auth_token;
+		this.m_auth_token = auth_token;
 	}
 
 	public String getAccount_sid() {
-		return account_sid;
+		return m_account_sid;
 	}
 
 	public void setAccount_sid(String account_sid) {
-		this.account_sid = account_sid;
+		this.m_account_sid = account_sid;
 	}
 }

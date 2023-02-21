@@ -23,34 +23,36 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 	}
 
 	@Override
-	protected void runNotesBeforeListen() {
-		initHelpers();
-	}
-
-	private void initHelpers() {
+	protected boolean runNotesAfterInitialize() {
+		boolean res = false;
+		
 		try {
 			// 1. database
 			m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
 			if (m_database == null || !m_database.isOpen()) {
 				logMessage("(!) iMessageSMS.nsf - can't be opened");
-				return;
+				return false;
 			}
 
 			// 2. create twilio rest helper
 			initTwilioHelper();
-			if (m_twilioHelper==null) return;
+			if (m_twilioHelper==null) return false;
 
 			m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
 			m_twilio.setAutoUpdate(false);
 
-			// 4. create send sms job
+			// 3. create send sms job
 			EventSendSMS event = new EventSendSMS("SendSMS", m_interval, false, this.m_logger);
 			event.twilioHelper = m_twilioHelper;
 			event.twilio = m_twilio;
 			eventsAdd(event);
+			
+			res = true;
 		} catch (NotesException e) {
 			e.printStackTrace();
 		}
+		
+		return res;
 	}
 
 	protected boolean resolveMessageQueueState(String cmd) {
@@ -60,7 +62,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 		if (cmd.startsWith("sms ")) {
 			sms(cmd);
-		} else if ("cmd".startsWith("config")) {
+		} else if (cmd.startsWith("config")) {
 			config();
 		} else {
 			logMessage("invalid command (use -h or help to get details)");
@@ -69,13 +71,14 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 		return true;
 	}
 
-	private void initTwilioHelper() {
+	private boolean initTwilioHelper() {
+		boolean res = false;
 		try {
 			View view = m_database.getView("(Sys.Config)");
 			Document doc = view.getFirstDocument();
 			if (doc == null) {
 				logMessage("(!) Config is missing in iMessageSMS.nsf");
-				return;
+				return false;
 			}
 
 			String Account_SID = doc.getItemValueString("Account_SID");
@@ -87,7 +90,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 			if (Account_SID.isEmpty() || Auth_token.isEmpty()) {
 				logMessage("(!) Config missing SID/token");
-				return;
+				return false;
 			}
 
 			if (m_twilioHelper == null) {
@@ -97,13 +100,21 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				m_twilioHelper.setAuth_token(Auth_token);
 				m_twilioHelper.setPhone(Phone);
 			}
+			
+			res = true;
 		} catch (NotesException e) {
 			e.printStackTrace();
 		}
+		
+		return res;
 	}
 
 	private void config() {
-		initTwilioHelper();
+		boolean res = initTwilioHelper();
+		if (res)
+			logMessage("ok");
+		else
+			logMessage("(!) Failed");
 	}
 
 	private void sms(String cmd) {
@@ -112,9 +123,9 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			return;
 		}
 
-		int index1 = cmd.indexOf(" ", 4);
-		String to = cmd.substring(4, index1);
-		String body = cmd.substring(index1 + 1);
+		int index = cmd.indexOf(" ", 4);
+		String to = cmd.substring(4, index);
+		String body = cmd.substring(index + 1);
 
 		try {
 			Document doc = m_database.createDocument();
