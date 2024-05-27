@@ -2,170 +2,194 @@ import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v082.JavaServerAddinGenesis;
-import net.prominic.iMessageSMS.EventSendSMS;
+import net.prominic.gja_v084.JavaServerAddinGenesis;
+import net.prominic.iMessageSMS.EventTwilioHandler;
 import net.prominic.iMessageSMS.TwilioHelper;
 
 public class iMessageSMS extends JavaServerAddinGenesis {
-	Database m_database = null; // iMessageSMS.nsf
-	TwilioHelper m_twilioHelper = null;
-	View m_twilio = null;
-	private int m_interval = 3; // seconds
+    private Database m_database = null; // iMessageSMS.nsf
+    private TwilioHelper m_twilioHelper = null;
+    private View m_twilio = null;
+    private int m_interval = 3; // seconds
 
-	@Override
-	protected String getJavaAddinVersion() {
-		return "0.6.0";
-	}
+    @Override
+    protected String getJavaAddinVersion() {
+        return "1.0.7";
+    }
 
-	@Override
-	protected String getJavaAddinDate() {
-		return "2023-02-21 19:00";
-	}
+    @Override
+    protected String getJavaAddinDate() {
+        return "2024-05-26 18:00";
+    }
 
-	@Override
-	protected boolean runNotesAfterInitialize() {
-		boolean res = false;
-		
-		try {
-			// 1. database
-			m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
-			if (m_database == null || !m_database.isOpen()) {
-				logMessage("(!) iMessageSMS.nsf - can't be opened");
-				return false;
-			}
+    @Override
+    protected boolean runNotesAfterInitialize() {
+        try {
+            // 1. Open database
+            m_database = m_session.getDatabase(null, "iMessageSMS.nsf");
+            if (m_database == null || !m_database.isOpen()) {
+                logMessage("(!) iMessageSMS.nsf - can't be opened");
+                return false;
+            }
 
-			// 2. create twilio rest helper
-			initTwilioHelper();
-			if (m_twilioHelper==null) return false;
+            // 2. Initialize Twilio helper
+            if (!initTwilioHelper()) return false;
 
-			m_twilio = m_database.getView("(Sys.UnprocessedTwilio)");
-			m_twilio.setAutoUpdate(false);
+            // 3. Get view and disable auto-update
+            m_twilio = m_database.getView("($requests.unprocessedTwilio)");
+            if (m_twilio == null) {
+                logMessage("(!) Unable to open view ($requests.unprocessedTwilio)");
+                return false;
+            }
+            m_twilio.setAutoUpdate(false);
 
-			// 3. create send sms job
-			EventSendSMS event = new EventSendSMS("SendSMS", m_interval, false, this.m_logger);
-			event.twilioHelper = m_twilioHelper;
-			event.twilio = m_twilio;
-			eventsAdd(event);
-			
-			res = true;
-		} catch (NotesException e) {
-			e.printStackTrace();
-		}
-		
-		return res;
-	}
+            // 4. Create and add Twilio event handler
+            EventTwilioHandler event = new EventTwilioHandler("TwilioHandler", m_interval, false, this.m_logger);
+            event.twilioHelper = m_twilioHelper;
+            event.twilio = m_twilio;
+            eventsAdd(event);
 
-	protected boolean resolveMessageQueueState(String cmd) {
-		boolean flag = super.resolveMessageQueueState(cmd);
-		if (flag)
-			return true;
+            return true;
+        } catch (NotesException e) {
+            logException(e);
+            return false;
+        }
+    }
 
-		if (cmd.startsWith("sms ")) {
-			sms(cmd);
-		} else if (cmd.startsWith("config")) {
-			config();
-		} else {
-			logMessage("invalid command (use -h or help to get details)");
-		}
+    @Override
+    protected boolean resolveMessageQueueState(String cmd) {
+        boolean flag = super.resolveMessageQueueState(cmd);
+        if (flag) return true;
 
-		return true;
-	}
+        if (cmd.startsWith("sms ")) {
+            sms(cmd);
+        } else if (cmd.startsWith("call ")) {
+            call(cmd);
+        } else if (cmd.startsWith("config")) {
+            config();
+        } else {
+            logMessage("Invalid command (use -h or help to get details)");
+        }
 
-	private boolean initTwilioHelper() {
-		boolean res = false;
-		try {
-			View view = m_database.getView("(Sys.Config)");
-			Document doc = view.getFirstDocument();
-			if (doc == null) {
-				logMessage("(!) Config is missing in iMessageSMS.nsf");
-				return false;
-			}
+        return true;
+    }
 
-			String Account_SID = doc.getItemValueString("Account_SID");
-			String Auth_token = doc.getItemValueString("Auth_token");
-			String Phone = doc.getItemValueString("Phone");
+    private boolean initTwilioHelper() {
+        try {
+            View view = m_database.getView("($config)");
+            Document doc = view.getFirstDocument();
+            if (doc == null) {
+                logMessage("(!) Config is missing in iMessageSMS.nsf");
+                return false;
+            }
 
-			doc.recycle();
-			view.recycle();
+            String accountSid = doc.getItemValueString("Account_SID");
+            String authToken = doc.getItemValueString("Auth_token");
+            String phone = doc.getItemValueString("Phone");
 
-			if (Account_SID.isEmpty() || Auth_token.isEmpty()) {
-				logMessage("(!) Config missing SID/token");
-				return false;
-			}
+            doc.recycle();
+            view.recycle();
 
-			if (m_twilioHelper == null) {
-				m_twilioHelper = new TwilioHelper(Account_SID, Auth_token, Phone);
-			} else {
-				m_twilioHelper.setAccount_sid(Account_SID);
-				m_twilioHelper.setAuth_token(Auth_token);
-				m_twilioHelper.setPhone(Phone);
-			}
-			
-			res = true;
-		} catch (NotesException e) {
-			e.printStackTrace();
-		}
-		
-		return res;
-	}
+            if (accountSid.isEmpty() || authToken.isEmpty()) {
+                logMessage("(!) Config missing SID/token");
+                return false;
+            }
 
-	private void config() {
-		boolean res = initTwilioHelper();
-		if (res)
-			logMessage("config updated: OK");
-		else
-			logMessage("config updated: failed");
-	}
+            m_twilioHelper = new TwilioHelper(accountSid, authToken, phone);
+            return true;
+        } catch (NotesException e) {
+            logException(e);
+            return false;
+        }
+    }
 
-	private void sms(String cmd) {
-		if (cmd.length() < 10) {
-			this.logMessage("command should be longer than 10 characters");
-			return;
-		}
+    private void config() {
+        if (initTwilioHelper()) {
+            logMessage("Config updated: OK");
+        } else {
+            logMessage("Config updated: failed");
+        }
+    }
 
-		int index = cmd.indexOf(" ", 4);
-		String to = cmd.substring(4, index);
-		String body = cmd.substring(index + 1);
+    private void sms(String cmd) {
+        send(cmd, "sms");
+    }
 
-		try {
-			Document doc = m_database.createDocument();
-			doc.replaceItemValue("Form", "Request");
-			doc.replaceItemValue("To", to);
-			doc.replaceItemValue("Body", body);
-			doc.save();
+    private void call(String cmd) {
+        send(cmd, "call");
+    }
 
-			doc.recycle();
+    private void send(String cmd, String type) {
+        if (cmd.length() < type.length() + 1) {
+            logMessage("Command should be longer than the type and a space");
+            return;
+        }
 
-			logMessage("request has been created");
-		} catch (NotesException e) {
-			e.printStackTrace();
-		}
-	}
+        try {
+            int index = cmd.indexOf(" ", type.length() + 1);
+            if (index == -1 || index == cmd.length() - 1) {
+                logMessage("Command format is incorrect");
+                return;
+            }
 
-	protected void showHelpExt() {
-		logMessage("   config           Refresh SID, token and phone from active config");
-		logMessage("   sms <to> <body>  Send sms");
-	}
+            String to = cmd.substring(type.length() + 1, index).trim();
+            String body = cmd.substring(index + 1).trim();
 
-	protected void showInfoExt() {
-		logMessage("interval     " + m_interval);
-		logMessage("twilio phone " + m_twilioHelper.getPhone());
-	}
+            if (to.isEmpty() || body.isEmpty()) {
+                logMessage("To and Body must not be empty");
+                return;
+            }
 
-	protected void termBeforeAB() {
-		try {
-			if (m_twilio != null) {
-				m_twilio.recycle();
-				m_twilio = null;
-			}
+            Document doc = m_database.createDocument();
+            doc.replaceItemValue("Form", "Request");
+            doc.replaceItemValue("Type", type);
+            doc.replaceItemValue("To", to);
+            doc.replaceItemValue("Body", body);
+            doc.save();
+            doc.recycle();
 
-			if (this.m_database != null) {
-				this.m_database.recycle();
-				this.m_database = null;
-			}
-		} catch (NotesException e) {
-			e.printStackTrace();
-		}
-	}
+            logMessage("Request has been created");
+        } catch (NotesException e) {
+            logException(e);
+        }
+    }
 
+    @Override
+    protected void showHelpExt() {
+        logMessage("   config            Refresh SID, token and phone from active config");
+        logMessage("   sms <to> <body>   Send SMS");
+        logMessage("   call <to> <body>  Start a call");
+    }
+
+    @Override
+    protected void showInfoExt() {
+        logMessage("Interval:     " + m_interval + " seconds");
+        if (m_twilioHelper != null) {
+            logMessage("Twilio phone: " + m_twilioHelper.getFromPhone());
+        } else {
+            logMessage("Twilio Helper not initialized.");
+        }
+    }
+
+    @Override
+    protected void termBeforeAB() {
+        try {
+            if (m_twilio != null) {
+                m_twilio.recycle();
+                m_twilio = null;
+            }
+
+            if (m_database != null) {
+                m_database.recycle();
+                m_database = null;
+            }
+        } catch (NotesException e) {
+            logException(e);
+        }
+    }
+
+    private void logException(Exception e) {
+        e.printStackTrace(); // You might want to use a proper logging framework here
+        logMessage("Error: " + e.getMessage());
+    }
 }

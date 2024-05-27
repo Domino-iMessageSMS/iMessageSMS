@@ -3,14 +3,14 @@ package net.prominic.iMessageSMS;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
-import net.prominic.gja_v082.Event;
-import net.prominic.gja_v082.GLogger;
+import net.prominic.gja_v084.Event;
+import net.prominic.gja_v084.GLogger;
 
-public class EventSendSMS extends Event {
+public class EventTwilioHandler extends Event {
 	public TwilioHelper 			twilioHelper		= null;
 	public View 					twilio				= null;
 
-	public EventSendSMS(String name, long seconds, boolean fireOnStart, GLogger logger) {
+	public EventTwilioHandler(String name, long seconds, boolean fireOnStart, GLogger logger) {
 		super(name, seconds, fireOnStart, logger);
 	}
 
@@ -33,10 +33,11 @@ public class EventSendSMS extends Event {
 			Document docNext = twilio.getNextDocument(doc);
 
 			int res = 0;
+			String type = doc.getItemValueString("Type");
 			String to = doc.getItemValueString("To");
 			String body = doc.getItemValueString("Body");
 			if (!(to.isEmpty() || body.isEmpty())) {
-				res = twilioHelper.send(to, body);
+				res = twilioHelper.send(type, to, body);
 			}
 
 			// mark as processed
@@ -48,5 +49,4 @@ public class EventSendSMS extends Event {
 			doc = docNext;
 		}
 	}
-	
 }

@@ -4,7 +4,7 @@
   <groupId>net.prominic.iMessageSMS</groupId>
   <artifactId>iMessageSMS</artifactId>
   <name>iMessageSMS</name>
-  <version>0.6.0</version>
+  <version>1.0.7</version>
   <url>http://maven.apache.org</url>
   <build>
     <plugins>
@@ -17,14 +17,18 @@
             <goals>
               <goal>shade</goal>
             </goals>
-            <configuration>
-              <artifactSet>
-                <excludes />
-              </artifactSet>
-            </configuration>
           </execution>
         </executions>
-        <configuration />
+        <configuration>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/MANIFEST.MF</exclude>
+              </excludes>
+            </filter>
+          </filters>
+        </configuration>
       </plugin>
     </plugins>
   </build>
