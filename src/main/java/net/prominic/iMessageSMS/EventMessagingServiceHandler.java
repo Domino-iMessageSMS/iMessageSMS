@@ -9,6 +9,7 @@ import net.prominic.gja_v084.GLogger;
 public class EventMessagingServiceHandler extends Event {
 	public MessagingServiceHelper  	messsangingHelper	= null;
 	public View 					request				= null;
+	public String					forceMessageType	= null;
 
 	public EventMessagingServiceHandler(String name, long seconds, boolean fireOnStart, GLogger logger) {
 		super(name, seconds, fireOnStart, logger);
@@ -33,11 +34,15 @@ public class EventMessagingServiceHandler extends Event {
 			Document docNext = request.getNextDocument(doc);
 
 			int res = 0;
-			String type = doc.getItemValueString("Type");
+			String mfa = doc.getItemValueString("Type");
 			String to = doc.getItemValueString("To");
 			String body = doc.getItemValueString("Body");
 			if (!(to.isEmpty() || body.isEmpty())) {
-				res = messsangingHelper.send(type, to, body);
+				if ("sms".equals(forceMessageType) || "call".equalsIgnoreCase(forceMessageType)) {
+					mfa = forceMessageType;
+				}
+				
+				res = messsangingHelper.send(mfa, to, body);
 			}
 
 			// mark as processed

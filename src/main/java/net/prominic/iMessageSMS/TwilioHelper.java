@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class TwilioHelper extends MessagingServiceHelper {
-    private static final String BASE_API = "https://api.twilio.com/2010-04-01";
     private final String accountSid;
     private final String authToken;
 
@@ -16,22 +15,16 @@ public class TwilioHelper extends MessagingServiceHelper {
     }
 
     @Override
-    protected String getServiceName() {
+    public String getServiceName() {
         return "twilio";
     }
 
-    @Override
-    protected String getBaseApiUrl() {
-        return BASE_API;
-    }
-
-    @Override
-    protected String getAccountId() {
+    private String getAccountId() {
         return "Accounts/" + accountSid;
     }
 
     @Override
-    protected String getAuth() {
+    protected String getAuth(String mfa) {
         String userCredentials = accountSid + ":" + authToken;
         String basicAuth = "Basic " + Base64.getEncoder().encodeToString(userCredentials.getBytes(StandardCharsets.UTF_8));
         
@@ -66,7 +59,7 @@ public class TwilioHelper extends MessagingServiceHelper {
 	@Override
 	protected String getEndpoint(String mfa) {
         String action = "call".equalsIgnoreCase(mfa) ? "Calls.json" : "Messages.json";
-        String endpoint = getBaseApiUrl() + "/" + getAccountId() + "/" + action;
+        String endpoint = "https://api.twilio.com/2010-04-01/" + getAccountId() + "/" + action;
         return endpoint;
 	}
 

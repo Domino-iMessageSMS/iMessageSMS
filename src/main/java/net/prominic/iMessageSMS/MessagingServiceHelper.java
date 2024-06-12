@@ -26,15 +26,16 @@ public abstract class MessagingServiceHelper {
         try {
         	String endpoint = getEndpoint(mfa);
             String payload = createDataPayload(mfa, to, body);
-
-            return sendHTTPRequest(endpoint, payload);
+            String auth = this.getAuth(mfa);
+            
+            return sendHTTPRequest(endpoint, payload, auth);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error while creating data payload", e);
             return -1;
         }
     }
 
-    protected int sendHTTPRequest(String endpoint, String payload) {
+    protected int sendHTTPRequest(String endpoint, String payload, String auth) {
         HttpURLConnection conn = null;
         try {
             URL url = new URL(endpoint);
@@ -45,7 +46,7 @@ public abstract class MessagingServiceHelper {
             byte[] out = payload.getBytes(StandardCharsets.UTF_8);
 
             conn.setFixedLengthStreamingMode(out.length);
-            conn.setRequestProperty("Authorization", getAuth());
+            conn.setRequestProperty("Authorization", auth);
             conn.setRequestProperty("Content-Type", getContentType());
 
             try (OutputStream os = conn.getOutputStream()) {
@@ -75,17 +76,13 @@ public abstract class MessagingServiceHelper {
         }
     }
 
-    protected abstract String getServiceName();
-
-    protected abstract String getBaseApiUrl();
+    public abstract String getServiceName();
 
     protected abstract String getContentType();
     
     protected abstract String getEndpoint(String mfa);
-    
-    protected abstract String getAccountId();
 
-    protected abstract String getAuth();
+    protected abstract String getAuth(String mfa);
 
     protected abstract String createDataPayload(String mfa, String to, String body) throws UnsupportedEncodingException;
 

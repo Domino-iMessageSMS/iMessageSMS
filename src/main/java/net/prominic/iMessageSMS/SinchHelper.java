@@ -1,55 +1,51 @@
 package net.prominic.iMessageSMS;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 public class SinchHelper extends MessagingServiceHelper {
-    private static final String BASE_API = "https://api.sinch.com/v1";
-    private final String appKey;
-    private final String appSecret;
+    private final String ServicePlanID;
+    private final String APIToken;
+    private final String AppKey;
+    private final String AppSecret;
 
-    public SinchHelper(String appKey, String appSecret, String fromPhone) {
+    public SinchHelper(String ServicePlanID, String APIToken, String AppKey, String AppSecret, String fromPhone) {
         super(fromPhone);
-        this.appKey = appKey;
-        this.appSecret = appSecret;
+        this.ServicePlanID = ServicePlanID;
+        this.APIToken = APIToken;
+        this.AppKey = AppKey;
+        this.AppSecret = AppSecret;
     }
 
     @Override
-    protected String getServiceName() {
+    public String getServiceName() {
         return "sinch";
     }
 
-    @Override
-    protected String getBaseApiUrl() {
-        return BASE_API;
-    }
-
-    @Override
-    protected String getAuth() {
-        return "Bearer " + appSecret;
+    protected String getAuth(String mfa) {
+    	if ("call".equalsIgnoreCase(mfa)) {
+            String userCredentials = AppKey + ":" + AppSecret;
+            String basicAuth = "Basic " + Base64.getEncoder().encodeToString(userCredentials.getBytes(StandardCharsets.UTF_8));
+            return basicAuth;
+    	}
+    	
+    	//sms
+        return "Bearer " + APIToken;
     }
 
     @Override
     protected String createDataPayload(String mfa, String to, String body) throws UnsupportedEncodingException {
-        StringBuilder data = new StringBuilder();
-        data.append("{");
-
         if ("call".equalsIgnoreCase(mfa)) {
-            data.append("\"method\":\"tts\",")
-                .append("\"message\":\"").append(body).append("\",")
-                .append("\"to\":\"").append(to).append("\",")
-                .append("\"from\":\"").append(fromPhone).append("\"");
+            return String.format(
+                    "{\"method\":\"ttsCallout\",\"ttsCallout\":{\"cli\":\"%s\", \"domain\": \"pstn\", \"destination\":{\"type\":\"number\",\"endpoint\":\"%s\"},\"locale\":\"en-US\",\"prompts\":\"#tts[%s]\"}}",
+                    this.fromPhone, to, body);
         } else if ("whatsapp".equalsIgnoreCase(mfa)) {
-            data.append("\"from\":\"whatsapp:").append(fromPhone).append("\",")
-                .append("\"to\":\"whatsapp:").append(to).append("\",")
-                .append("\"body\":\"").append(body).append("\"");
         } else {
-            data.append("\"from\":\"").append(fromPhone).append("\",")
-                .append("\"to\":\"").append(to).append("\",")
-                .append("\"body\":\"").append(body).append("\"");
+        	return String.format("{\"from\":\"%s\",\"to\":[\"%s\"],\"body\":\"%s\"}", this.fromPhone, to, body);
         }
 
-        data.append("}");
-        return data.toString();
+        return "";
     }
 
 	@Override
@@ -59,15 +55,14 @@ public class SinchHelper extends MessagingServiceHelper {
 
 	@Override
 	protected String getEndpoint(String mfa) {
-String endpoint = getBaseApiUrl();
+		String endpoint;
+		if ("call".equalsIgnoreCase(mfa)) {
+			endpoint= "https://calling.api.sinch.com/calling/v1/callouts";
+		}
+		else {
+			endpoint = "https://sms.api.sinch.com/xms/v1/"+ServicePlanID+"/batches";
+		}
 
 		return endpoint;
 	}
-
-	@Override
-	protected String getAccountId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 }
