@@ -1,15 +1,18 @@
 import lotus.domino.Database;
+
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.View;
 import net.prominic.gja_v084.JavaServerAddinGenesis;
-import net.prominic.iMessageSMS.EventTwilioHandler;
+import net.prominic.iMessageSMS.EventMessagingServiceHandler;
+import net.prominic.iMessageSMS.MessagingServiceHelper;
+import net.prominic.iMessageSMS.SinchHelper;
 import net.prominic.iMessageSMS.TwilioHelper;
 
 public class iMessageSMS extends JavaServerAddinGenesis {
     private Database m_database = null; // iMessageSMS.nsf
-    private TwilioHelper m_twilioHelper = null;
-    private View m_twilio = null;
+    private MessagingServiceHelper m_messagingServiceHelper = null;
+    private View m_request = null;
     private int m_interval = 3; // seconds
 
     @Override
@@ -19,7 +22,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
     @Override
     protected String getJavaAddinDate() {
-        return "2024-05-26 18:00";
+        return "2024-06-12 14:00";
     }
 
     @Override
@@ -32,21 +35,21 @@ public class iMessageSMS extends JavaServerAddinGenesis {
                 return false;
             }
 
-            // 2. Initialize Twilio helper
-            if (!initTwilioHelper()) return false;
+            // 2. Initialize MessagingServiceHelper (Twilio or Sinch)
+            if (!initMessageHelper()) return false;
 
             // 3. Get view and disable auto-update
-            m_twilio = m_database.getView("($requests.unprocessedTwilio)");
-            if (m_twilio == null) {
-                logMessage("(!) Unable to open view ($requests.unprocessedTwilio)");
+            m_request = m_database.getView("($requests.unprocessed)");
+            if (m_request == null) {
+                logMessage("(!) Unable to open view ($requests.unprocessed)");
                 return false;
             }
-            m_twilio.setAutoUpdate(false);
+            m_request.setAutoUpdate(false);
 
-            // 4. Create and add Twilio event handler
-            EventTwilioHandler event = new EventTwilioHandler("TwilioHandler", m_interval, false, this.m_logger);
-            event.twilioHelper = m_twilioHelper;
-            event.twilio = m_twilio;
+            // 4. Create and add messaging event handler
+            EventMessagingServiceHandler event = new EventMessagingServiceHandler("MessagingServiceHandler", m_interval, false, this.m_logger);
+            event.messsangingHelper = m_messagingServiceHelper;
+            event.request = m_request;
             eventsAdd(event);
 
             return true;
@@ -74,37 +77,64 @@ public class iMessageSMS extends JavaServerAddinGenesis {
         return true;
     }
 
-    private boolean initTwilioHelper() {
+    private boolean initMessageHelper() {
+        Document doc = null;
+        View view = null;
+
         try {
-            View view = m_database.getView("($config)");
-            Document doc = view.getFirstDocument();
+            view = m_database.getView("($config)");
+            doc = view.getFirstDocument();
+
             if (doc == null) {
-                logMessage("(!) Config is missing in iMessageSMS.nsf");
+                logMessage("(!) Active Config is missing in iMessageSMS.nsf");
                 return false;
             }
+            
+            String provider = doc.getItemValueString("Provider");
+            if ("Sinch".equalsIgnoreCase(provider)) {
+                String SinchServicePlanID = doc.getItemValueString("SinchServicePlanID");
+                String SinchAPIToken = doc.getItemValueString("SinchAPIToken");
+                String SinchPhone = doc.getItemValueString("SinchPhone");
+                
+                if (SinchServicePlanID.isEmpty() || SinchAPIToken.isEmpty()) {
+                    logMessage("(!) Config missing Twilio SID/token");
+                    return false;
+                }
+                
+                m_messagingServiceHelper = new SinchHelper(SinchServicePlanID, SinchAPIToken, SinchPhone);
+            }
+            else {
+                String TwilioAccount_SID = doc.getItemValueString("TwilioAccount_SID");
+                String TwilioAuth_token = doc.getItemValueString("TwilioAuth_token");
+                String TwilioPhone = doc.getItemValueString("TwilioPhone");
 
-            String accountSid = doc.getItemValueString("Account_SID");
-            String authToken = doc.getItemValueString("Auth_token");
-            String phone = doc.getItemValueString("Phone");
-
-            doc.recycle();
-            view.recycle();
-
-            if (accountSid.isEmpty() || authToken.isEmpty()) {
-                logMessage("(!) Config missing SID/token");
-                return false;
+                if (TwilioAccount_SID.isEmpty() || TwilioAuth_token.isEmpty()) {
+                    logMessage("(!) Config missing Twilio SID/token");
+                    return false;
+                }
+                m_messagingServiceHelper = new TwilioHelper(TwilioAccount_SID, TwilioAuth_token, TwilioPhone);
             }
 
-            m_twilioHelper = new TwilioHelper(accountSid, authToken, phone);
             return true;
         } catch (NotesException e) {
             logException(e);
             return false;
+        } finally {
+            try {
+                if (doc != null) {
+                    doc.recycle();
+                }
+                if (view != null) {
+                    view.recycle();
+                }
+            } catch (NotesException e) {
+                logException(e);
+            }
         }
     }
 
     private void config() {
-        if (initTwilioHelper()) {
+        if (initMessageHelper()) {
             logMessage("Config updated: OK");
         } else {
             logMessage("Config updated: failed");
@@ -164,19 +194,19 @@ public class iMessageSMS extends JavaServerAddinGenesis {
     @Override
     protected void showInfoExt() {
         logMessage("Interval:     " + m_interval + " seconds");
-        if (m_twilioHelper != null) {
-            logMessage("Twilio phone: " + m_twilioHelper.getFromPhone());
+        if (m_messagingServiceHelper != null) {
+            logMessage("Messanging Helper phone: " + m_messagingServiceHelper.getFromPhone());
         } else {
-            logMessage("Twilio Helper not initialized.");
+            logMessage("Messanging Helper not initialized.");
         }
     }
 
     @Override
     protected void termBeforeAB() {
         try {
-            if (m_twilio != null) {
-                m_twilio.recycle();
-                m_twilio = null;
+            if (m_request != null) {
+                m_request.recycle();
+                m_request = null;
             }
 
             if (m_database != null) {

@@ -1,92 +1,73 @@
 package net.prominic.iMessageSMS;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-public class TwilioHelper {
-    private static final Logger LOGGER = Logger.getLogger(TwilioHelper.class.getName());
+public class TwilioHelper extends MessagingServiceHelper {
     private static final String BASE_API = "https://api.twilio.com/2010-04-01";
-
     private final String accountSid;
     private final String authToken;
-    private final String fromPhone;
 
     public TwilioHelper(String accountSid, String authToken, String fromPhone) {
+        super(fromPhone);
         this.accountSid = accountSid;
         this.authToken = authToken;
-        this.fromPhone = fromPhone;
     }
 
-    private String encode(String value) throws UnsupportedEncodingException {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+    @Override
+    protected String getServiceName() {
+        return "twilio";
     }
 
-    public int send(String type, String phoneTo, String body) {
-        LOGGER.info("twilio.send: started");
+    @Override
+    protected String getBaseApiUrl() {
+        return BASE_API;
+    }
 
-        String action = "call".equalsIgnoreCase(type) ? "Calls.json" : "Messages.json";
-        String endpoint = BASE_API + "/Accounts/" + accountSid + "/" + action;
+    @Override
+    protected String getAccountId() {
+        return "Accounts/" + accountSid;
+    }
 
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(endpoint);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
+    @Override
+    protected String getAuth() {
+        String userCredentials = accountSid + ":" + authToken;
+        String basicAuth = "Basic " + Base64.getEncoder().encodeToString(userCredentials.getBytes(StandardCharsets.UTF_8));
+        
+        return basicAuth;
+    }
 
-            String data = "To=" + encode(phoneTo) + "&From=" + encode(getFromPhone());
-            if ("call".equalsIgnoreCase(type)) {
-            	data += "&Url=" + encode("http://twimlets.com/message?Message=" + encode(body));
-            }
-            else {
-                data += "&Body=" + encode(body);
-            }
-            	
-            byte[] out = data.getBytes(StandardCharsets.UTF_8);
-            String userCredentials = accountSid + ":" + authToken;
-            String basicAuth = "Basic " + Base64.getEncoder().encodeToString(userCredentials.getBytes(StandardCharsets.UTF_8));
+    @Override
+    protected String createDataPayload(String mfa, String to, String body) throws UnsupportedEncodingException {
+        StringBuilder data = new StringBuilder();
 
-            conn.setFixedLengthStreamingMode(out.length);
-            conn.setRequestProperty("Authorization", basicAuth);
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(out);
-            }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode > 201) {
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                    StringBuilder response = new StringBuilder();
-                    String inputLine;
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    LOGGER.warning("Response: " + response.toString());
-                }
-            }
-
-            return responseCode;
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error while sending message via Twilio", e);
-            return -1;
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+        if ("call".equalsIgnoreCase(mfa)) {
+            data.append("To=").append(encode(to))
+                .append("&From=").append(encode(fromPhone))
+                .append("&Url=").append(encode("http://twimlets.com/message?Message=" + encode(body)));
+        } else if ("whatsapp".equalsIgnoreCase(mfa)) {
+            data.append("To=").append(encode("whatsapp:" + to))
+                .append("&From=").append(encode("whatsapp:" + fromPhone))
+                .append("&Body=").append(encode(body));
+        } else {
+            data.append("To=").append(encode(to))
+                .append("&From=").append(encode(fromPhone))
+                .append("&Body=").append(encode(body));
         }
+        return data.toString();
     }
 
-	public String getFromPhone() {
-		return fromPhone;
+    
+	protected String getContentType() {
+		return "application/x-www-form-urlencoded; charset=UTF-8";
 	}
+
+	@Override
+	protected String getEndpoint(String mfa) {
+        String action = "call".equalsIgnoreCase(mfa) ? "Calls.json" : "Messages.json";
+        String endpoint = getBaseApiUrl() + "/" + getAccountId() + "/" + action;
+        return endpoint;
+	}
+
 }
