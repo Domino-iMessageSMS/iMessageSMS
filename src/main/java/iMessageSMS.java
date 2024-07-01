@@ -17,12 +17,12 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinVersion() {
-		return "1.1.0";
+		return "1.1.1";
 	}
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2024-06-12 14:30";
+		return "2024-07-01 19:30 (WhatsApp)";
 	}
 
 	@Override

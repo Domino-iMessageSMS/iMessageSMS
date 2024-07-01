@@ -35,7 +35,9 @@ public class SinchHelper extends MessagingServiceHelper {
     }
 
     @Override
-    protected String createDataPayload(String mfa, String to, String body) throws UnsupportedEncodingException {
+    protected String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException {
+    	String body = args[0];
+    	
         if ("call".equalsIgnoreCase(mfa)) {
             return String.format(
                     "{\"method\":\"ttsCallout\",\"ttsCallout\":{\"cli\":\"%s\", \"domain\": \"pstn\", \"destination\":{\"type\":\"number\",\"endpoint\":\"%s\"},\"locale\":\"en-US\",\"prompts\":\"#tts[%s]\"}}",

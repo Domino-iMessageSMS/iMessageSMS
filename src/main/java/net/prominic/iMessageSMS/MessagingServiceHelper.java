@@ -20,12 +20,15 @@ public abstract class MessagingServiceHelper {
         this.fromPhone = fromPhone;
     }
 
-    public int send(String mfa, String to, String body) {
+    /*
+     * used for WhatsApp
+     */
+    public int send(String mfa, String to, String... args) {
         LOGGER.info(String.format("%s: %s to %s", getServiceName(), mfa, to));
 
         try {
         	String endpoint = getEndpoint(mfa);
-            String payload = createDataPayload(mfa, to, body);
+            String payload = createDataPayload(mfa, to, args);
             String auth = this.getAuth(mfa);
             
             return sendHTTPRequest(endpoint, payload, auth);
@@ -84,7 +87,7 @@ public abstract class MessagingServiceHelper {
 
     protected abstract String getAuth(String mfa);
 
-    protected abstract String createDataPayload(String mfa, String to, String body) throws UnsupportedEncodingException;
+    protected abstract String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException;
 
     public String getFromPhone() {
         return fromPhone;

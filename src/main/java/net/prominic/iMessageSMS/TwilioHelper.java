@@ -31,27 +31,36 @@ public class TwilioHelper extends MessagingServiceHelper {
         return basicAuth;
     }
 
-    @Override
-    protected String createDataPayload(String mfa, String to, String body) throws UnsupportedEncodingException {
+    /*
+     * For WhatsApp message will only contain code, while for SMS and Call it will be a full message (including code and expire time)
+     */
+    protected String createDataPayload(String mfa, String phoneTo, String... args) throws UnsupportedEncodingException {
         StringBuilder data = new StringBuilder();
 
+        String message = args.length > 0 ? args[0] : "";
+        String serviceSid = args.length > 1 ? args[1] : "";
+        String templateSid = args.length > 2 ? args[2] : "";
+        
         if ("call".equalsIgnoreCase(mfa)) {
-            data.append("To=").append(encode(to))
-                .append("&From=").append(encode(fromPhone))
-                .append("&Url=").append(encode("http://twimlets.com/message?Message=" + encode(body)));
+            data.append("To=").append(encode(phoneTo))
+                .append("&From=").append(encode(getFromPhone()))
+                .append("&Url=").append(encode("http://twimlets.com/message?Message=" + encode(message)));
         } else if ("whatsapp".equalsIgnoreCase(mfa)) {
-            data.append("To=").append(encode("whatsapp:" + to))
-                .append("&From=").append(encode("whatsapp:" + fromPhone))
-                .append("&Body=").append(encode(body));
+            data.append("To=").append(encode("whatsapp:" + phoneTo))
+                .append("&From=").append(encode("whatsapp:" + getFromPhone()))
+                .append("&MessagingServiceSid=").append(serviceSid)
+                .append("&ContentSid=").append(templateSid)
+                .append("&ContentVariables=").append(encode(String.format("{\"1\": \"%s\"}", message)));
         } else {
-            data.append("To=").append(encode(to))
-                .append("&From=").append(encode(fromPhone))
-                .append("&Body=").append(encode(body));
+            data.append("To=").append(encode(phoneTo))
+                .append("&From=").append(encode(getFromPhone()))
+                .append("&Body=").append(encode(message));
         }
-        return data.toString();
+        
+        System.out.println(data.toString());
+        return data.toString();    	
     }
 
-    
 	protected String getContentType() {
 		return "application/x-www-form-urlencoded; charset=UTF-8";
 	}
