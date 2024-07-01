@@ -56,8 +56,7 @@ public class TwilioHelper extends MessagingServiceHelper {
                 .append("&From=").append(encode(getFromPhone()))
                 .append("&Body=").append(encode(message));
         }
-        
-        System.out.println(data.toString());
+
         return data.toString();    	
     }
 
