@@ -40,14 +40,15 @@ public class SinchHelper extends MessagingServiceHelper {
     	String body = args[0];
     	
         String regionCode = this.getCountryFromPhoneNumber(to);
-        
+        String from = getPhone(regionCode);
+
         if ("call".equalsIgnoreCase(mfa)) {
             return String.format(
                     "{\"method\":\"ttsCallout\",\"ttsCallout\":{\"cli\":\"%s\", \"domain\": \"pstn\", \"destination\":{\"type\":\"number\",\"endpoint\":\"%s\"},\"locale\":\"en-US\",\"prompts\":\"#tts[%s]\"}}",
-                    getPhone(regionCode), to, body);
+                    from, to, body);
         } else if ("whatsapp".equalsIgnoreCase(mfa)) {
         } else {
-        	return String.format("{\"from\":\"%s\",\"to\":[\"%s\"],\"body\":\"%s\"}", getPhone(regionCode), to, body);
+        	return String.format("{\"from\":\"%s\",\"to\":[\"%s\"],\"body\":\"%s\"}", from, to, body);
         }
 
         return "";

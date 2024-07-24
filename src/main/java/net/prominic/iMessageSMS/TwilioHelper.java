@@ -43,19 +43,21 @@ public class TwilioHelper extends MessagingServiceHelper {
         String templateSid = args.length > 2 ? args[2] : "";
         
         String regionCode = this.getCountryFromPhoneNumber(to);
+        String from = getPhone(regionCode);
+        
         if ("call".equalsIgnoreCase(mfa)) {
             data.append("To=").append(encode(to))
-                .append("&From=").append(encode(getPhone(regionCode)))
+                .append("&From=").append(encode(from))
                 .append("&Url=").append(encode("http://twimlets.com/message?Message=" + encode(message)));
         } else if ("whatsapp".equalsIgnoreCase(mfa)) {
             data.append("To=").append(encode("whatsapp:" + to))
-                .append("&From=").append(encode("whatsapp:" + getPhone(regionCode)))
+                .append("&From=").append(encode("whatsapp:" + from))
                 .append("&MessagingServiceSid=").append(serviceSid)
                 .append("&ContentSid=").append(templateSid)
                 .append("&ContentVariables=").append(encode(String.format("{\"1\": \"%s\"}", message)));
         } else {
             data.append("To=").append(encode(to))
-                .append("&From=").append(encode(getPhone(regionCode)))
+                .append("&From=").append(encode(from))
                 .append("&Body=").append(encode(message));
         }
 

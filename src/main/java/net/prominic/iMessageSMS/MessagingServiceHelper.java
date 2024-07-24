@@ -93,8 +93,8 @@ public abstract class MessagingServiceHelper {
 
     protected abstract String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException;
 
-    public String getPhone(String locale) {
-    	String res = phones.containsKey(locale) ? phones.get(locale) : phones.get("US");
+    public String getPhone(String regionCode) {
+    	String res = phones.containsKey(regionCode) ? phones.get(regionCode) : phones.get("US");
         return res;
     }
     
