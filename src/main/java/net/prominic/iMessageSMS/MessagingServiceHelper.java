@@ -8,16 +8,20 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 
 public abstract class MessagingServiceHelper {
     private static final Logger LOGGER = Logger.getLogger(MessagingServiceHelper.class.getName());
 
-    protected final String fromPhone;
+    protected final Map<String, String> phones;
 
-    public MessagingServiceHelper(String fromPhone) {
-        this.fromPhone = fromPhone;
+    public MessagingServiceHelper(Map<String, String> phones) {
+        this.phones = phones;
     }
 
     /*
@@ -89,11 +93,27 @@ public abstract class MessagingServiceHelper {
 
     protected abstract String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException;
 
-    public String getFromPhone() {
-        return fromPhone;
+    public String getPhone(String locale) {
+    	String res = phones.containsKey(locale) ? phones.get(locale) : phones.get("US");
+        return res;
     }
     
     protected String encode(String value) throws UnsupportedEncodingException {
         return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+    }
+    
+    protected String getCountryFromPhoneNumber(String phoneNumber) {
+        try {
+        	PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+            Phonenumber.PhoneNumber number = phoneUtil.parse(phoneNumber, null);
+            String regionCode = phoneUtil.getRegionCodeForNumber(number);
+            if (regionCode==null) {
+            	regionCode = "US";
+            }
+            return regionCode;
+        } catch (NumberParseException e) {
+            LOGGER.log(Level.SEVERE, "Error while trying to get region", e);
+            return "US";
+        }
     }
 }

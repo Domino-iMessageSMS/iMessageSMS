@@ -1,3 +1,6 @@
+import java.util.HashMap;
+import java.util.Map;
+
 import lotus.domino.Database;
 
 import lotus.domino.Document;
@@ -17,12 +20,12 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinVersion() {
-		return "1.1.1";
+		return "1.1.2";
 	}
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2024-07-01 19:30 (WhatsApp)";
+		return "2024-07-24 19:30 (GB compliance)";
 	}
 
 	@Override
@@ -111,27 +114,31 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			if ("Sinch".equalsIgnoreCase(provider)) {
 				String SinchServicePlanID = doc.getItemValueString("SinchServicePlanID");
 				String SinchAPIToken = doc.getItemValueString("SinchAPIToken");
-				String SinchPhone = doc.getItemValueString("SinchPhone");
 				String SinchAppKey = doc.getItemValueString("SinchAppKey");
 				String SinchAppSecret = doc.getItemValueString("SinchAppSecret");
-
+				Map<String, String> phones = new HashMap<>();
+				phones.put("US", doc.getItemValueString("SinchPhone"));
+				phones.put("GB", doc.getItemValueString("SinchPhoneGB"));
+				
 				if (SinchServicePlanID.isEmpty() || SinchAPIToken.isEmpty()) {
 					logMessage("(!) Config missing Twilio SID/token");
 					return false;
 				}
 
 				m_messagingServiceHelper = new SinchHelper(SinchServicePlanID, SinchAPIToken, SinchAppKey, SinchAppSecret,
-						SinchPhone);
+						phones);
 			} else {
 				String TwilioAccount_SID = doc.getItemValueString("TwilioAccount_SID");
 				String TwilioAuth_token = doc.getItemValueString("TwilioAuth_token");
-				String TwilioPhone = doc.getItemValueString("TwilioPhone");
-
+				Map<String, String> phones = new HashMap<>();
+				phones.put("US", doc.getItemValueString("TwilioPhone"));
+				phones.put("GB", doc.getItemValueString("TwilioPhoneGB"));
+				
 				if (TwilioAccount_SID.isEmpty() || TwilioAuth_token.isEmpty()) {
 					logMessage("(!) Config missing Twilio SID/token");
 					return false;
 				}
-				m_messagingServiceHelper = new TwilioHelper(TwilioAccount_SID, TwilioAuth_token, TwilioPhone);
+				m_messagingServiceHelper = new TwilioHelper(TwilioAccount_SID, TwilioAuth_token, phones);
 			}
 			return true;
 		} catch (NotesException e) {
@@ -210,7 +217,6 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 		logMessage("Interval:     " + m_interval + " seconds");
 		if (m_messagingServiceHelper != null) {
 			logMessage("Provider: " + m_messagingServiceHelper.getServiceName());
-			logMessage("Phone:    " + m_messagingServiceHelper.getFromPhone());
 		} else {
 			logMessage("Messanging Helper not initialized.");
 		}

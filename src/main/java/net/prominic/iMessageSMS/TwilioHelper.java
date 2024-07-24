@@ -3,13 +3,14 @@ package net.prominic.iMessageSMS;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
 
 public class TwilioHelper extends MessagingServiceHelper {
     private final String accountSid;
     private final String authToken;
 
-    public TwilioHelper(String accountSid, String authToken, String fromPhone) {
-        super(fromPhone);
+    public TwilioHelper(String accountSid, String authToken, Map<String, String> phones) {
+        super(phones);
         this.accountSid = accountSid;
         this.authToken = authToken;
     }
@@ -34,26 +35,27 @@ public class TwilioHelper extends MessagingServiceHelper {
     /*
      * For WhatsApp message will only contain code, while for SMS and Call it will be a full message (including code and expire time)
      */
-    protected String createDataPayload(String mfa, String phoneTo, String... args) throws UnsupportedEncodingException {
+    protected String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException {
         StringBuilder data = new StringBuilder();
 
         String message = args.length > 0 ? args[0] : "";
         String serviceSid = args.length > 1 ? args[1] : "";
         String templateSid = args.length > 2 ? args[2] : "";
         
+        String regionCode = this.getCountryFromPhoneNumber(to);
         if ("call".equalsIgnoreCase(mfa)) {
-            data.append("To=").append(encode(phoneTo))
-                .append("&From=").append(encode(getFromPhone()))
+            data.append("To=").append(encode(to))
+                .append("&From=").append(encode(getPhone(regionCode)))
                 .append("&Url=").append(encode("http://twimlets.com/message?Message=" + encode(message)));
         } else if ("whatsapp".equalsIgnoreCase(mfa)) {
-            data.append("To=").append(encode("whatsapp:" + phoneTo))
-                .append("&From=").append(encode("whatsapp:" + getFromPhone()))
+            data.append("To=").append(encode("whatsapp:" + to))
+                .append("&From=").append(encode("whatsapp:" + getPhone(regionCode)))
                 .append("&MessagingServiceSid=").append(serviceSid)
                 .append("&ContentSid=").append(templateSid)
                 .append("&ContentVariables=").append(encode(String.format("{\"1\": \"%s\"}", message)));
         } else {
-            data.append("To=").append(encode(phoneTo))
-                .append("&From=").append(encode(getFromPhone()))
+            data.append("To=").append(encode(to))
+                .append("&From=").append(encode(getPhone(regionCode)))
                 .append("&Body=").append(encode(message));
         }
 
