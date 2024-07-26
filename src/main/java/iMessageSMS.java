@@ -25,7 +25,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2024-07-24 19:30 (GB compliance)";
+		return "2024-07-26 16:30 (GB compliance)";
 	}
 
 	@Override
