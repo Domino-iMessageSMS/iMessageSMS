@@ -43,7 +43,7 @@ public class TwilioHelper extends MessagingServiceHelper {
         String templateSid = args.length > 2 ? args[2] : "";
         
         String regionCode = this.getCountryFromPhoneNumber(to);
-        String from = getPhone(regionCode);
+        String from = getPhone(mfa, regionCode);
         
         if ("call".equalsIgnoreCase(mfa)) {
             data.append("To=").append(encode(to))

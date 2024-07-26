@@ -117,8 +117,8 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				String SinchAppKey = doc.getItemValueString("SinchAppKey");
 				String SinchAppSecret = doc.getItemValueString("SinchAppSecret");
 				Map<String, String> phones = new HashMap<>();
-				phones.put("US", doc.getItemValueString("SinchPhone"));
-				phones.put("GB", doc.getItemValueString("SinchPhoneGB"));
+				phones.put("default", doc.getItemValueString("SinchPhone"));
+				phones.put("sms-GB", doc.getItemValueString("SinchPhoneSMSGB"));
 				
 				if (SinchServicePlanID.isEmpty() || SinchAPIToken.isEmpty()) {
 					logMessage("(!) Config missing Twilio SID/token");
@@ -131,8 +131,8 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				String TwilioAccount_SID = doc.getItemValueString("TwilioAccount_SID");
 				String TwilioAuth_token = doc.getItemValueString("TwilioAuth_token");
 				Map<String, String> phones = new HashMap<>();
-				phones.put("US", doc.getItemValueString("TwilioPhone"));
-				phones.put("GB", doc.getItemValueString("TwilioPhoneGB"));
+				phones.put("default", doc.getItemValueString("TwilioPhone"));
+				phones.put("sms-GB", doc.getItemValueString("TwilioPhoneSMSGB"));
 				
 				if (TwilioAccount_SID.isEmpty() || TwilioAuth_token.isEmpty()) {
 					logMessage("(!) Config missing Twilio SID/token");

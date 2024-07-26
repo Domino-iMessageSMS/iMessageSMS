@@ -40,7 +40,7 @@ public class SinchHelper extends MessagingServiceHelper {
     	String body = args[0];
     	
         String regionCode = this.getCountryFromPhoneNumber(to);
-        String from = getPhone(regionCode);
+        String from = getPhone(mfa, regionCode);
 
         if ("call".equalsIgnoreCase(mfa)) {
             return String.format(

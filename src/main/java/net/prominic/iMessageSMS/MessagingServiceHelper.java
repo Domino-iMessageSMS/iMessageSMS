@@ -93,8 +93,9 @@ public abstract class MessagingServiceHelper {
 
     protected abstract String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException;
 
-    public String getPhone(String regionCode) {
-    	String res = phones.containsKey(regionCode) ? phones.get(regionCode) : phones.get("US");
+    public String getPhone(String type, String regionCode) {
+    	String key = type + "-" + regionCode;
+    	String res = phones.containsKey(key) ? phones.get(key) : phones.get("default");
         return res;
     }
     
@@ -108,12 +109,12 @@ public abstract class MessagingServiceHelper {
             Phonenumber.PhoneNumber number = phoneUtil.parse(phoneNumber, null);
             String regionCode = phoneUtil.getRegionCodeForNumber(number);
             if (regionCode==null) {
-            	regionCode = "US";
+            	regionCode = "?";
             }
             return regionCode;
         } catch (NumberParseException e) {
             LOGGER.log(Level.SEVERE, "Error while trying to get region", e);
-            return "US";
+            return "?";
         }
     }
 }
