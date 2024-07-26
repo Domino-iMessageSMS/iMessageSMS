@@ -28,12 +28,14 @@ public abstract class MessagingServiceHelper {
      * used for WhatsApp
      */
     public int send(String mfa, String to, String... args) {
-        LOGGER.info(String.format("%s: %s to %s", getServiceName(), mfa, to));
-
         try {
+            String regionCode = this.getCountryFromPhoneNumber(to);
+            String from = getPhone(mfa, regionCode);
+            LOGGER.info(String.format("%s: %s to %s (from %s)", getServiceName(), mfa, to, from));
+            
         	String endpoint = getEndpoint(mfa);
-            String payload = createDataPayload(mfa, to, args);
-            String auth = this.getAuth(mfa);
+            String payload = createDataPayload(mfa, to, from, args);
+            String auth = getAuth(mfa);
             
             return sendHTTPRequest(endpoint, payload, auth);
         } catch (Exception e) {
@@ -91,7 +93,7 @@ public abstract class MessagingServiceHelper {
 
     protected abstract String getAuth(String mfa);
 
-    protected abstract String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException;
+    protected abstract String createDataPayload(String mfa, String to, String from, String... args) throws UnsupportedEncodingException;
 
     public String getPhone(String type, String regionCode) {
     	String key = type + "-" + regionCode;

@@ -37,6 +37,7 @@ public class EventMessagingServiceHandler extends Event {
 			String mfa = doc.getItemValueString("Type");
 			String to = doc.getItemValueString("To");
 			String body = doc.getItemValueString("Body");
+	        
 			String MessagingServiceSid = doc.getItemValueString("TwilioService_SID");
 			String ContentSid = doc.getItemValueString("TwilioCustomTemplate_SID");
 			
@@ -45,6 +46,7 @@ public class EventMessagingServiceHandler extends Event {
 					mfa = forceMessageType;
 				}
 
+				
 				res = messsangingHelper.send(mfa, to, body, MessagingServiceSid, ContentSid);	
 			}
 

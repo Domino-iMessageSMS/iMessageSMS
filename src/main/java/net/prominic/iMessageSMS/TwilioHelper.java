@@ -35,15 +35,12 @@ public class TwilioHelper extends MessagingServiceHelper {
     /*
      * For WhatsApp message will only contain code, while for SMS and Call it will be a full message (including code and expire time)
      */
-    protected String createDataPayload(String mfa, String to, String... args) throws UnsupportedEncodingException {
+    protected String createDataPayload(String mfa, String to, String from, String... args) throws UnsupportedEncodingException {
         StringBuilder data = new StringBuilder();
 
         String message = args.length > 0 ? args[0] : "";
         String serviceSid = args.length > 1 ? args[1] : "";
         String templateSid = args.length > 2 ? args[2] : "";
-        
-        String regionCode = this.getCountryFromPhoneNumber(to);
-        String from = getPhone(mfa, regionCode);
         
         if ("call".equalsIgnoreCase(mfa)) {
             data.append("To=").append(encode(to))
