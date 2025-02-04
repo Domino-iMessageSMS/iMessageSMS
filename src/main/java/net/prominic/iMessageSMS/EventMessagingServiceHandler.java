@@ -35,19 +35,36 @@ public class EventMessagingServiceHandler extends Event {
 
 			int res = 0;
 			String mfa = doc.getItemValueString("Type");
-			String to = doc.getItemValueString("To");
-			String body = doc.getItemValueString("Body");
-	        
-			String MessagingServiceSid = doc.getItemValueString("TwilioService_SID");
-			String ContentSid = doc.getItemValueString("TwilioCustomTemplate_SID");
+			if (mfa.isEmpty()) {
+				mfa = "sms";
+			}
 			
-			if (!(to.isEmpty() || body.isEmpty())) {
-				if ("sms".equals(forceMessageType) || "call".equalsIgnoreCase(forceMessageType)) {
-					mfa = forceMessageType;
-				}
+			String to = doc.getItemValueString("To");
 
-				
-				res = messsangingHelper.send(mfa, to, body, MessagingServiceSid, ContentSid);	
+			if ("sms".equals(forceMessageType) || "call".equalsIgnoreCase(forceMessageType)) {
+				mfa = forceMessageType;
+			}
+			
+			if ("whatsapp".equals(mfa)) {
+				String sid = doc.getItemValueString("sid");
+				String parameters = doc.getItemValueString("parameters");
+
+				if (to.isEmpty() || sid.isEmpty()) {
+					res = -1;
+				}
+				else {
+					res = messsangingHelper.send(mfa, to, sid, parameters);
+				}
+			}
+			else {	// sms or call
+				String body = doc.getItemValueString("Body");
+
+				if (to.isEmpty() || body.isEmpty()) {
+					res = -1;
+				}
+				else {
+					res = messsangingHelper.send(mfa, to, body);	
+				}
 			}
 
 			// mark as processed

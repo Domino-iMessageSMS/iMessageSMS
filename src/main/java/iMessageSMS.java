@@ -1,5 +1,6 @@
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 import lotus.domino.Database;
 
@@ -20,12 +21,12 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 	@Override
 	protected String getJavaAddinVersion() {
-		return "1.1.2";
+		return "1.1.4";
 	}
 
 	@Override
 	protected String getJavaAddinDate() {
-		return "2024-07-26 16:30 (GB compliance)";
+		return "2025-02-04 12:30 (Sender List)";
 	}
 
 	@Override
@@ -60,8 +61,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 
 			// 5. Create and add messaging event handler
 			String ForceMessageType = doc.getItemValueString("ForceMessageType");
-			EventMessagingServiceHandler event = new EventMessagingServiceHandler("MessagingServiceHandler", m_interval,
-					false, this.m_logger);
+			EventMessagingServiceHandler event = new EventMessagingServiceHandler("MessagingServiceHandler", m_interval, false, this.m_logger);
 			event.messsangingHelper = m_messagingServiceHelper;
 			event.request = m_request;
 			event.forceMessageType = ForceMessageType;
@@ -116,9 +116,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 				String SinchAPIToken = doc.getItemValueString("SinchAPIToken");
 				String SinchAppKey = doc.getItemValueString("SinchAppKey");
 				String SinchAppSecret = doc.getItemValueString("SinchAppSecret");
-				Map<String, String> phones = new HashMap<>();
-				phones.put("default", doc.getItemValueString("SinchPhone"));
-				phones.put("sms-GB", doc.getItemValueString("SinchPhoneSMSGB"));
+				Map<String, String> phones = parseSenderList(doc, "SinchPhone");
 				
 				if (SinchServicePlanID.isEmpty() || SinchAPIToken.isEmpty()) {
 					logMessage("(!) Config missing Twilio SID/token");
@@ -130,9 +128,7 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 			} else {
 				String TwilioAccount_SID = doc.getItemValueString("TwilioAccount_SID");
 				String TwilioAuth_token = doc.getItemValueString("TwilioAuth_token");
-				Map<String, String> phones = new HashMap<>();
-				phones.put("default", doc.getItemValueString("TwilioPhone"));
-				phones.put("sms-GB", doc.getItemValueString("TwilioPhoneSMSGB"));
+				Map<String, String> phones = parseSenderList(doc, "TwilioPhone");
 				
 				if (TwilioAccount_SID.isEmpty() || TwilioAuth_token.isEmpty()) {
 					logMessage("(!) Config missing Twilio SID/token");
@@ -148,6 +144,21 @@ public class iMessageSMS extends JavaServerAddinGenesis {
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
+	private Map<String, String> parseSenderList(Document doc, String itemName) throws NotesException {
+	    Map<String, String> phones = new HashMap<>();
+	    phones.put("default", doc.getItemValueString(itemName));
+
+	    Vector<String> senderList = doc.getItemValue(itemName + "SenderList");
+	    for (String entry : senderList) {
+	        String[] parts = entry.split(":", 2);
+	        if (parts.length == 2) {
+	            phones.put(parts[0].trim(), parts[1].trim());
+	        }
+	    }
+	    return phones;
+	}
+	
 	private void config() {
 		Document doc = getConfig();
 		if (doc == null) {

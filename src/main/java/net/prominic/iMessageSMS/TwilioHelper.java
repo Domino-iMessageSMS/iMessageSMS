@@ -20,16 +20,10 @@ public class TwilioHelper extends MessagingServiceHelper {
         return "twilio";
     }
 
-    private String getAccountId() {
-        return "Accounts/" + accountSid;
-    }
-
     @Override
     protected String getAuth(String mfa) {
         String userCredentials = accountSid + ":" + authToken;
-        String basicAuth = "Basic " + Base64.getEncoder().encodeToString(userCredentials.getBytes(StandardCharsets.UTF_8));
-        
-        return basicAuth;
+        return "Basic " + Base64.getEncoder().encodeToString(userCredentials.getBytes(StandardCharsets.UTF_8));
     }
 
     /*
@@ -38,26 +32,26 @@ public class TwilioHelper extends MessagingServiceHelper {
     protected String createDataPayload(String mfa, String to, String from, String... args) throws UnsupportedEncodingException {
         StringBuilder data = new StringBuilder();
 
-        String message = args.length > 0 ? args[0] : "";
-        String serviceSid = args.length > 1 ? args[1] : "";
-        String templateSid = args.length > 2 ? args[2] : "";
-        
         if ("call".equalsIgnoreCase(mfa)) {
+            String message = args.length > 0 ? args[0] : "";
             data.append("To=").append(encode(to))
                 .append("&From=").append(encode(from))
                 .append("&Url=").append(encode("http://twimlets.com/message?Message=" + encode(message)));
         } else if ("whatsapp".equalsIgnoreCase(mfa)) {
+            String sid = args.length > 0 ? args[0] : "";
+            String parameters = args.length > 1 ? args[1] : "";
+
             data.append("To=").append(encode("whatsapp:" + to))
                 .append("&From=").append(encode("whatsapp:" + from))
-                .append("&MessagingServiceSid=").append(serviceSid)
-                .append("&ContentSid=").append(templateSid)
-                .append("&ContentVariables=").append(encode(String.format("{\"1\": \"%s\"}", message)));
+                .append("&ContentSid=").append(sid)
+                .append("&ContentVariables=").append(encode(parameters));
         } else {
+            String body = args.length > 0 ? args[0] : "";
             data.append("To=").append(encode(to))
                 .append("&From=").append(encode(from))
-                .append("&Body=").append(encode(message));
+                .append("&Body=").append(encode(body));
         }
-
+        
         return data.toString();    	
     }
 
@@ -68,8 +62,7 @@ public class TwilioHelper extends MessagingServiceHelper {
 	@Override
 	protected String getEndpoint(String mfa) {
         String action = "call".equalsIgnoreCase(mfa) ? "Calls.json" : "Messages.json";
-        String endpoint = "https://api.twilio.com/2010-04-01/" + getAccountId() + "/" + action;
-        return endpoint;
+        return String.format("https://api.twilio.com/2010-04-01/Accounts/%s/%s", accountSid, action);
 	}
 
 }
